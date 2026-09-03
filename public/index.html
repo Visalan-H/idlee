@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free Rooms</title>
+<style>
+  :root {
+    --bg: #0b0c0e; --card: #16181d; --line: #24272e;
+    --text: #e8eaed; --dim: #9aa1ab;
+    --free: #22c55e; --busy: #ef4444; --soon: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    padding: 16px 14px 48px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  .clock { font-variant-numeric: tabular-nums; color: var(--dim); font-size: 14px; }
+  .stat { margin: 14px 0 10px; font-size: 15px; color: var(--dim); }
+  .stat b { color: var(--free); font-size: 22px; }
+  input {
+    width: 100%; padding: 12px 14px; margin: 6px 0 14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    color: var(--text); font-size: 16px;
+  }
+  input:focus { outline: none; border-color: #3b82f6; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tabs button {
+    flex: 1; padding: 9px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--card); color: var(--dim); font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] { background: #1f2937; color: var(--text); border-color: #374151; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .room {
+    background: var(--card); border: 1px solid var(--line); border-left-width: 3px;
+    border-radius: 10px; padding: 10px; cursor: pointer; text-align: left;
+    color: inherit; font: inherit;
+  }
+  .room:hover { border-color: #3b82f6; }
+  .room.free { border-left-color: var(--free); }
+  .room.busy { border-left-color: var(--busy); }
+  .room.soon { border-left-color: var(--soon); }
+  .room.unknown { border-left-color: var(--line); opacity: .55; }
+  .room .no { font-size: 16px; font-weight: 600; letter-spacing: .3px; }
+  .room .sub { font-size: 11px; color: var(--dim); margin-top: 3px; }
+  .empty, .foot { color: var(--dim); font-size: 13px; padding: 24px 4px; text-align: center; }
+  .foot { padding: 20px 4px 0; font-size: 12px; }
+  dialog {
+    background: var(--card); color: var(--text); border: 1px solid var(--line);
+    border-radius: 14px; padding: 18px; width: min(440px, 92vw);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.6); }
+  dialog h2 { margin: 0 0 2px; font-size: 22px; }
+  dialog .day { color: var(--dim); font-size: 13px; margin-bottom: 14px; }
+  .slot { display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .slot .time { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--dim); white-space: nowrap; flex: 0 0 auto; }
+  .slot .what { font-size: 14px; }
+  .slot.now, .slot.now .time { color: var(--soon); }
+  dialog button.close {
+    margin-top: 16px; width: 100%; padding: 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: #1f2937; color: var(--text);
+    font-size: 14px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Free Rooms</h1>
+  <div class="clock" id="clock">&mdash;</div>
+
+  <div class="stat" id="stat">Loading&hellip;</div>
+
+  <input id="search" type="search" placeholder="Search a room &mdash; 3654" autocomplete="off">
+
+  <div class="tabs" role="tablist">
+    <button role="tab" data-view="free" aria-selected="true">Free now</button>
+    <button role="tab" data-view="all" aria-selected="false">All rooms</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<dialog id="detail">
+  <h2 id="d-room"></h2>
+  <div class="day" id="d-status"></div>
+  <div id="d-slots"></div>
+  <button class="close" id="d-close">Close</button>
+</dialog>
+
+<script>
+const IST = "Asia/Kolkata";
+const el = (id) => document.getElementById(id);
+
+let data = null;
+let view = "free";
+let query = "";
+
+const fmtTime = (d) =>
+  new Intl.DateTimeFormat("en-IN", { timeZone: IST, hour: "2-digit", minute: "2-digit", hour12: true }).format(d);
+
+const esc = (s) =>
+  s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function tickClock() {
+  el("clock").textContent = new Intl.DateTimeFormat("en-IN", {
+    timeZone: IST, weekday: "short", day: "numeric", month: "short",
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  }).format(new Date()) + " IST";
+}
+
+function statusOf(room, now) {
+  if (!room.fresh) return { kind: "unknown", label: "no data" };
+  if (!room.sessions.length) return { kind: "free", label: "free all day" };
+
+  const current = room.sessions.find(
+    (s) => new Date(s.startsAt) <= now && now < new Date(s.endsAt),
+  );
+  if (current) return { kind: "busy", label: "till " + fmtTime(new Date(current.endsAt)) };
+
+  const next = room.sessions
+    .map((s) => new Date(s.startsAt))
+    .filter((d) => d > now)
+    .sort((a, b) => a - b)[0];
+  if (!next) return { kind: "free", label: "free rest of day" };
+
+  const mins = Math.round((next - now) / 60000);
+  return mins <= 30
+    ? { kind: "soon", label: "class in " + mins + "m" }
+    : { kind: "free", label: "free till " + fmtTime(next) };
+}
+
+function render() {
+  if (!data) return;
+  const now = new Date();
+
+  const rooms = data.rooms
+    .map((r) => ({ ...r, status: statusOf(r, now) }))
+    .filter((r) => r.room.toLowerCase().includes(query))
+    .filter((r) => view === "all" || r.status.kind === "free" || r.status.kind === "soon");
+
+  const freeCount = data.rooms.filter((r) => statusOf(r, now).kind === "free").length;
+  el("stat").innerHTML =
+    "<b>" + freeCount + "</b> of " + data.rooms.length + " rooms free right now";
+
+  el("grid").innerHTML = rooms
+    .map((r) =>
+      '<button class="room ' + r.status.kind + '" data-room="' + esc(r.room) + '">' +
+        '<div class="no">' + esc(r.room) + "</div>" +
+        '<div class="sub">' + r.status.label + "</div>" +
+      "</button>")
+    .join("");
+
+  el("empty").hidden = rooms.length > 0;
+  el("empty").textContent = query
+    ? 'No room matching "' + query + '".'
+    : "Nothing free right now.";
+}
+
+function openRoom(roomNo) {
+  const room = data.rooms.find((r) => r.room === roomNo);
+  if (!room) return;
+
+  const now = new Date();
+  const status = statusOf(room, now);
+
+  el("d-room").textContent = room.room;
+  el("d-status").textContent =
+    status.kind === "busy" ? "Busy — " + status.label
+    : status.kind === "unknown" ? "Schedule hasn't loaded for this room"
+    : status.label.charAt(0).toUpperCase() + status.label.slice(1);
+
+  el("d-slots").innerHTML = room.sessions.length
+    ? room.sessions
+        .map((s) => {
+          const start = new Date(s.startsAt);
+          const end = new Date(s.endsAt);
+          const live = start <= now && now < end;
+          return '<div class="slot' + (live ? " now" : "") + '">' +
+            '<div class="time">' + fmtTime(start) + " – " + fmtTime(end) + "</div>" +
+            '<div class="what">' + (s.course ? esc(s.course) : "Booked") + "</div>" +
+          "</div>";
+        })
+        .join("")
+    : '<div class="slot"><div class="what">No classes scheduled today.</div></div>';
+
+  el("detail").showModal();
+}
+
+el("grid").addEventListener("click", (e) => {
+  const btn = e.target.closest(".room");
+  if (btn) openRoom(btn.dataset.room);
+});
+
+el("d-close").addEventListener("click", () => el("detail").close());
+
+el("search").addEventListener("input", (e) => {
+  query = e.target.value.trim().toLowerCase();
+  if (query) setView("all");
+  render();
+});
+
+function setView(next) {
+  view = next;
+  document.querySelectorAll(".tabs button").forEach((b) =>
+    b.setAttribute("aria-selected", String(b.dataset.view === next)));
+}
+
+document.querySelectorAll(".tabs button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    setView(btn.dataset.view);
+    render();
+  });
+});
+
+async function load() {
+  try {
+    const res = await fetch("/api/rooms");
+    if (!res.ok) throw new Error(String(res.status));
+    data = await res.json();
+    const stamp = data.updatedAt
+      ? fmtTime(new Date(data.updatedAt)) + " IST"
+      : "never";
+    el("foot").textContent = "Schedule last refreshed " + stamp;
+    render();
+  } catch {
+    el("stat").textContent = "Couldn't load the schedule.";
+  }
+}
+
+tickClock();
+setInterval(tickClock, 30000);
+setInterval(render, 60000);
+load();
+</script>
+</body>
+</html>

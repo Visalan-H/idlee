@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick QR Scanner</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0f0f10;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+  h2 { margin: 8px 0; font-size: 18px; font-weight: 600; }
+  #video-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+  }
+  video { width: 100%; display: block; }
+  #flash {
+    position: absolute;
+    inset: 0;
+    background: #22c55e;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s ease;
+  }
+  #flash.on { opacity: 0.55; transition: opacity 0s; }
+  #status {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #9ca3af;
+    min-height: 20px;
+  }
+  #status.hit { color: #22c55e; font-weight: 600; }
+  #controls {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 420px;
+    margin-top: 12px;
+  }
+  button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #copyBtn { background: #2563eb; color: white; }
+  #clearBtn { background: #374151; color: #eee; }
+  #count { margin-top: 14px; font-size: 13px; color: #9ca3af; }
+  #list {
+    width: 100%;
+    max-width: 420px;
+    margin-top: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 12px;
+    color: #9ca3af;
+    border-top: 1px solid #27272a;
+    padding-top: 8px;
+  }
+  #list div { padding: 3px 0; border-bottom: 1px solid #1f1f22; word-break: break-all; }
+</style>
+</head>
+<body>
+  <h2>Quick QR Scanner</h2>
+  <div id="video-wrap">
+    <video id="video" playsinline muted></video>
+    <div id="flash"></div>
+  </div>
+  <div id="status">Point camera at a QR code…</div>
+  <div id="controls">
+    <button id="copyBtn">Copy All</button>
+    <button id="clearBtn">Clear</button>
+  </div>
+  <div id="count">0 scanned</div>
+  <div id="list"></div>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+const statusEl = document.getElementById('status');
+const flash = document.getElementById('flash');
+const countEl = document.getElementById('count');
+const listEl = document.getElementById('list');
+
+// in-memory log (no localStorage in this sandbox)
+let scans = [];
+let lastCode = null;
+let lastTime = 0;
+const DEDUPE_MS = 2000; // ignore same code again within 2s so you can move to next one
+
+function render() {
+  countEl.textContent = scans.length + ' scanned';
+  listEl.innerHTML = scans.slice().reverse().map(s => `<div>${s}</div>`).join('');
+}
+
+function beep() {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.15, ac.currentTime);
+    o.start();
+    o.stop(ac.currentTime + 0.12);
+  } catch (e) {}
+}
+
+function onScan(text) {
+  const now = Date.now();
+  if (text === lastCode && (now - lastTime) < DEDUPE_MS) return;
+  lastCode = text;
+  lastTime = now;
+
+  scans.push(text);
+  render();
+  beep();
+
+  flash.classList.add('on');
+  setTimeout(() => flash.classList.remove('on'), 150);
+
+  statusEl.textContent = '✓ Scanned: ' + text;
+  statusEl.classList.add('hit');
+  setTimeout(() => {
+    statusEl.textContent = 'Point camera at next QR code…';
+    statusEl.classList.remove('hit');
+  }, 900);
+}
+
+if (typeof jsQR === 'undefined') {
+  statusEl.textContent = 'jsQR library failed to load — check your internet connection and refresh';
+}
+
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    video.srcObject = stream;
+    await video.play();
+    requestAnimationFrame(tick);
+  } catch (err) {
+    statusEl.textContent = 'Camera error: ' + err.message;
+  }
+}
+
+function tick() {
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
+    if (code && code.data) onScan(code.data);
+  }
+  requestAnimationFrame(tick);
+}
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const text = scans.join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1000);
+  });
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  scans = [];
+  lastCode = null;
+  render();
+});
+
+startCamera();
+render();
+</script>
+</body>
+</html>

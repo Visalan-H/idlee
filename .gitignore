@@ -11,3 +11,18 @@ build/
 *.dll
 *.zip
 *.iso
+
+# room tokens — these live in Postgres, never in the repo
+all_room_data.csv
+room_data.csv
+updated_rooms.xlsx
+fetch_output.txt
+.vercel
+
+# superseded one-off scrapers with hardcoded room tokens
+fetch_rooms.py
+fetch_more_rooms.py
+update_rooms.py
+
+# AI dev tooling
+.claude/
