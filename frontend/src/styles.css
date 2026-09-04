@@ -1,0 +1,206 @@
+:root {
+  --bg: #0b0c0e;
+  --card: #16181d;
+  --line: #24272e;
+  --text: #e8eaed;
+  --dim: #9aa1ab;
+  --free: #22c55e;
+  --busy: #ef4444;
+  --soon: #f59e0b;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  padding: 16px 14px 48px;
+}
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0 0 2px;
+}
+
+.clock {
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+  font-size: 14px;
+}
+
+.stat {
+  margin: 14px 0 10px;
+  font-size: 15px;
+  color: var(--dim);
+}
+
+.stat b {
+  color: var(--free);
+  font-size: 22px;
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  margin: 6px 0 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 16px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 9px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tabs button[aria-selected="true"] {
+  background: #1f2937;
+  color: var(--text);
+  border-color: #374151;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
+}
+
+.room {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.room:hover {
+  border-color: #3b82f6;
+}
+
+.room.free { border-left-color: var(--free); }
+.room.busy { border-left-color: var(--busy); }
+.room.soon { border-left-color: var(--soon); }
+
+.room.unknown {
+  border-left-color: var(--line);
+  opacity: 0.55;
+}
+
+.room .no {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.room .sub {
+  font-size: 11px;
+  color: var(--dim);
+  margin-top: 3px;
+}
+
+.empty,
+.foot {
+  color: var(--dim);
+  font-size: 13px;
+  padding: 24px 4px;
+  text-align: center;
+}
+
+.foot {
+  padding: 20px 4px 0;
+  font-size: 12px;
+}
+
+dialog {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  width: min(440px, 92vw);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+dialog h2 {
+  margin: 0 0 2px;
+  font-size: 22px;
+}
+
+dialog .day {
+  color: var(--dim);
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.slot {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.slot .time {
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--dim);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.slot .what {
+  font-size: 14px;
+}
+
+.slot.now,
+.slot.now .time {
+  color: var(--soon);
+}
+
+dialog button.close {
+  margin-top: 16px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #1f2937;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}

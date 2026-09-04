@@ -26,3 +26,10 @@ update_rooms.py
 
 # AI dev tooling
 .claude/
+
+.vercel
+
+!.env.example
+
+# build artifacts
+*.tsbuildinfo
