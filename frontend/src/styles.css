@@ -154,6 +154,7 @@ input {
   align-items: center;
   padding: 2px 7px;
   margin-left: 6px;
+  transform: rotate(-5deg);
   background: var(--charcoal);
   color: var(--offwhite);
   border-radius: 4px;
@@ -164,12 +165,10 @@ input {
   text-decoration: none;
   box-shadow: var(--inset-shadow);
   cursor: pointer;
-  animation: credit-tag-wobble 3.4s ease-in-out infinite;
-  transition: transform 0.15s ease;
+  transition: transform 0.2s ease;
 }
 
 .credit-tag:hover {
-  animation-play-state: paused;
   transform: rotate(0deg) scale(1.08);
 }
 
@@ -179,24 +178,12 @@ input {
 
 .credit-tag:focus-visible {
   outline: none;
-  animation-play-state: paused;
   box-shadow: var(--focus-shadow);
-}
-
-@keyframes credit-tag-wobble {
-  0%,
-  100% {
-    transform: rotate(-5deg);
-  }
-  50% {
-    transform: rotate(4deg);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .credit-tag {
-    animation: none;
-    transform: rotate(-5deg);
+    transition: none;
   }
 }
 
