@@ -1,19 +1,3 @@
-/* Theme toggle view transition: a plain cut instead of the default cross-fade, so the
-   circular reveal animated from JS (clip-path on ::view-transition-new) is all you see. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-
-::view-transition-old(root) {
-  z-index: 1;
-}
-
-::view-transition-new(root) {
-  z-index: 2;
-}
-
 :root {
   --cream: #f7f4ed;
   --charcoal: #1c1c1c;

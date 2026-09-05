@@ -6,6 +6,7 @@ import { RoomCard } from './components/RoomCard'
 import { RoomDialog } from './components/RoomDialog'
 import { RoomRow } from './components/RoomRow'
 import { StaleBanner } from './components/StaleBanner'
+import { ThemeRevealOverlay } from './components/ThemeRevealOverlay'
 import { TopPick } from './components/TopPick'
 import { useMyRoom } from './hooks/useMyRoom'
 import { useNow } from './hooks/useNow'
@@ -30,7 +31,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Room | null>(null)
   const [myRoom, setMyRoom] = useMyRoom()
-  const [theme, toggleTheme] = useTheme()
+  const { theme, toggle: toggleTheme, reveal, clearReveal } = useTheme()
 
   const load = useCallback(async () => {
     try {
@@ -251,6 +252,8 @@ export default function App() {
         onClose={() => setSelected(null)}
         onSetLocation={setMyRoom}
       />
+
+      {reveal && <ThemeRevealOverlay reveal={reveal} onDone={clearReveal} />}
     </div>
   )
 }

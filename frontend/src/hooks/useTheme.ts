@@ -1,8 +1,15 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react'
-import { flushSync } from 'react-dom'
 
 const KEY = 'freerooms:theme'
 type Theme = 'light' | 'dark'
+
+export interface ThemeReveal {
+  x: number
+  y: number
+  radius: number
+  /** The outgoing theme's page background, frozen so the overlay can wipe away from it. */
+  color: string
+}
 
 function readStored(): Theme | null {
   try {
@@ -17,12 +24,19 @@ function systemTheme(): Theme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-/** Follows the OS setting live until the user picks one explicitly, then remembers that choice. */
+/**
+ * Follows the OS setting live until the user picks one explicitly, then remembers that choice.
+ *
+ * The circular reveal is a real fixed-position div with clip-path (see ThemeRevealOverlay),
+ * not the View Transitions API. Animating a pseudo-element (::view-transition-new(root)) via
+ * the Web Animations API turned out to render inconsistently across engines/DPR/scrollbar
+ * states - the coordinates going in were always correct, but the rendered position wasn't. A
+ * plain DOM element with clip-path has no such snapshot ambiguity.
+ */
 export function useTheme() {
   const [stored, setStored] = useState<Theme | null>(readStored)
   const [system, setSystem] = useState<Theme>(systemTheme)
-  // A second tap mid-animation would start a new transition on top of the still-clipping old
-  // one, stacking two reveals and making the whole thing look laggy and misplaced. Guard against it.
+  const [reveal, setReveal] = useState<ThemeReveal | null>(null)
   const switching = useRef(false)
 
   useLayoutEffect(() => {
@@ -53,45 +67,28 @@ export function useTheme() {
       }
 
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      if (!document.startViewTransition || !origin || reduceMotion) {
+      if (!origin || reduceMotion) {
         apply()
         return
       }
 
       switching.current = true
-      const endRadius = Math.hypot(
+      const oldColor = getComputedStyle(document.documentElement).getPropertyValue('--cream').trim()
+      const radius = Math.hypot(
         Math.max(origin.x, window.innerWidth - origin.x),
         Math.max(origin.y, window.innerHeight - origin.y),
       )
 
-      const transition = document.startViewTransition(() => flushSync(apply))
-
-      transition.ready
-        .then(() => {
-          document.documentElement.animate(
-            {
-              clipPath: [
-                `circle(0px at ${origin.x}px ${origin.y}px)`,
-                `circle(${endRadius}px at ${origin.x}px ${origin.y}px)`,
-              ],
-            },
-            {
-              duration: 500,
-              easing: 'ease-in-out',
-              pseudoElement: '::view-transition-new(root)',
-            },
-          )
-        })
-        .catch(() => {
-          // Setup failed or the transition was superseded - the theme change already applied.
-        })
-
-      transition.finished.finally(() => {
-        switching.current = false
-      })
+      apply()
+      setReveal({ x: origin.x, y: origin.y, radius, color: oldColor })
     },
     [theme],
   )
 
-  return [theme, toggle] as const
+  const clearReveal = useCallback(() => {
+    setReveal(null)
+    switching.current = false
+  }, [])
+
+  return { theme, toggle, reveal, clearReveal }
 }
