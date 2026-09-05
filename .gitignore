@@ -26,8 +26,8 @@ update_rooms.py
 
 # AI dev tooling
 .claude/
-
-.vercel
+.agents/
+skills-lock.json
 
 !.env.example
 

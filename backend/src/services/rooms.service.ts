@@ -20,17 +20,22 @@ interface RoomDay {
 export async function getToday() {
   const day = istToday()
 
-  const { rows } = await pool.query<Row>(
-    `select r.room_no,
-            r.fetched_at > now() - interval '20 hours' as fresh,
-            r.fetched_at,
-            s.starts_at, s.ends_at, s.course
-       from rooms r
-       left join sessions s on s.room_id = r.id and s.day = $1
-      where r.active
-      order by r.room_no, s.starts_at`,
-    [day],
-  )
+  const [{ rows }, lastRun] = await Promise.all([
+    pool.query<Row>(
+      `select r.room_no,
+              r.fetched_at > now() - interval '20 hours' as fresh,
+              r.fetched_at,
+              s.starts_at, s.ends_at, s.course
+         from rooms r
+         left join sessions s on s.room_id = r.id and s.day = $1
+        where r.active
+        order by r.room_no, s.starts_at`,
+      [day],
+    ),
+    pool.query<{ ran_at: Date }>(
+      'select ran_at from refresh_runs order by ran_at desc limit 1',
+    ),
+  ])
 
   const byRoom = new Map<string, RoomDay>()
 
@@ -55,11 +60,11 @@ export async function getToday() {
   }
 
   const roomList = [...byRoom.values()]
-  const stamps = roomList.map((r) => r.fetchedAt).filter((t): t is string => t !== null)
 
   return {
     day,
-    updatedAt: stamps.length ? stamps.reduce((a, b) => (a > b ? a : b)) : null,
+    // When the cron last ran. Per-room success shows up in staleRooms and fetchedAt.
+    updatedAt: lastRun.rows[0]?.ran_at.toISOString() ?? null,
     staleRooms: roomList.filter((r) => !r.fresh).length,
     rooms: roomList,
   }

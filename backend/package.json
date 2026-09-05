@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@vercel/functions": "^3.9.5",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
