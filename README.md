@@ -1,94 +1,43 @@
 # Idlee
 
-Find a classroom that is actually free, without walking the corridor and trying
-door handles.
+Find a classroom that's actually free, without walking the corridor and trying door handles.
 
-- App: https://idlee.vercel.app
-- API: https://idlee-api.vercel.app
+Try here: https://idlee.vercel.app
 
-## The problem
+## The hour you lose
 
-You have an hour between classes. Somewhere on campus there is an empty room
-with a whiteboard and a plug socket. Finding it means climbing to the third
-floor, peering through six door windows, and settling for whichever one looks
-quiet. By the time you sit down you have lost fifteen minutes.
+You have a free hour between classes. Somewhere in the building there's an empty room with a whiteboard and a plug socket. Finding it means going up to the third floor, looking through six door windows, and settling for whichever one looks quiet. Fifteen minutes gone before you sit down.
 
-The timetable already knows the answer. It just does not tell anyone.
+The timetable already knows the answer. It just doesn't tell anyone.
 
-## What the app does
+## It started with the door QR
 
-Open it and you get one room at the top, in large type, with how far away it is
-and how long it stays free. That is the whole product. Everything else is there
-for when the top answer does not suit you.
+Every classroom has a small QR code taped next to the door. Scan it and the college portal shows you that room's timetable for the day.
 
-Tell it which room you are in and the ranking changes to match. `3654` means
-floor 3, row 6, column 5, so the app knows that `3652` is two doors down and
-`2654` is one floor below. It sorts by real walking distance, then by whichever
-room holds out longest before the next class claims it.
+The problem is what's behind the QR. It isn't `/room/3613`. It's a per-room token, a random string, different for every door. You can't type it and you can't guess it. To read room 3613's timetable you have to be standing in front of room 3613 with your camera out, which defeats the point, because the reason you wanted the timetable was to decide whether to walk there.
 
-Free now shows what you can walk into. All rooms shows the day for every room,
-free or not. Search understands floors, so typing `3` gives you the third floor
-rather than every room with a 3 buried in it.
+So the first thing I built wasn't the app. It was `qr-scanner/index.html`, a single page that opens the camera, reads a door QR and puts the token somewhere I can copy it from. Walk a corridor once, scan a row of doors, paste the batch in. That page is still in the repo and it's how new rooms get added.
 
-Tap any room for its full day, class by class, with the current one marked.
+## What you get
 
-## What it will not tell you
+Open it and there's one room at the top, in large type, with how far away it is and how long it stays free. That's the whole product. The rest is for when the top answer doesn't suit you.
 
-Who is teaching, which class it is beyond the course name, or how many students
-are in it. That information sits on the same page the app reads and the parser
-walks straight past it. The app answers one question. Is this room free.
+Tell it which room you're in and the ranking changes to match. Room numbers are coordinates: `3654` is floor 3, row 6, column 5. So `3652` is two doors down and `2654` is one floor below. It sorts by walking distance first, then by whichever room holds out longest before the next class takes it.
 
-Coverage is 100 rooms out of roughly 290. The rest are invisible to it, and an
-unmapped room looks the same as one with no classes. Scan a door QR with
-`qr-scanner/index.html` to add one.
+Free now shows what you can walk into. All rooms shows the day for every room, free or not. Search understands floors, so typing `3` gives you the third floor instead of every room with a 3 in it, and `ground` works too. Tap a room for its full day, class by class, with the current one marked.
 
-Schedules are read six times a day, not live. A class that gets moved at 11:05
-shows up at noon. The header tells you when the data last landed, and a banner
-appears if a refresh went missing.
+## What it won't tell you
 
-## Running it
+Who's teaching, which section it is, or how many students are in there. All of that sits on the same page the app reads, and it walks past it. Idlee answers one question. Is this room free.
 
-```bash
-cd backend  && npm install && cp .env.example .env   # fill in DATABASE_URL
-npm run dev                                          # :3001
+## What it doesn't cover yet
 
-cd frontend && npm install && cp .env.example .env
-npm run dev                                          # :5173
-```
+100 rooms out of roughly 290. The rest are invisible to it, and an unmapped room looks the same as one with no classes. Closing that gap is corridor work with the QR scanner page, the same walk that started this.
 
-`FRONTEND_URL` in `backend/.env` has to match the port Vite actually picks. If
-another project is holding 5173, Vite moves up and CORS starts rejecting you.
+Schedules are read six times a day, not live. A class moved at 11:05 shows up at noon. The header tells you when the data last landed, and a banner appears if a refresh went missing.
 
-First run against an empty database:
+## Under the hood
 
-```bash
-cd backend
-npm run schema                      # create the tables
-npm run seed                        # load rooms from ../all_room_data.csv
-npm run refresh                     # fetch today's schedule once
-```
+React and Vite on the front, Express and Postgres behind it, both on Vercel. A cron refreshes the schedules on a fixed rhythm so the college portal sees the same small number of requests whether one person uses this or five hundred.
 
-## Layout
-
-```
-backend/                         express, deployed to idlee-api.vercel.app
-├── src/index.ts                 app, routes, exported for Vercel
-├── src/services/                scraper, refresh, rooms
-├── src/routes/ controllers/ middleware/
-└── vercel.json                  pins the region to bom1
-
-frontend/                        vite + react, deployed to idlee.vercel.app
-├── src/api.ts                   the only file that knows the API exists
-├── src/status.ts                free / soon / busy, computed in the browser
-├── src/room.ts                  decodes a room number into floor, row, column
-├── src/rank.ts                  distance first, then how long it stays free
-└── src/components/ hooks/
-
-qr-scanner/                      standalone page for scanning door QR codes
-```
-
-Deploys run on push to `main`. Each project builds only when its own directory
-changed.
-
-[ARCHITECTURE.md](ARCHITECTURE.md) covers why it is built this way, including
-the college portal's limits and what happens when you push it too hard.
+[ARCHITECTURE.md](ARCHITECTURE.md) has the reasoning, including the portal's limits and what happens when you push it too hard. Setup steps are in there too.
