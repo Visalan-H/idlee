@@ -53,31 +53,25 @@ export function useTheme() {
         return
       }
 
-      const endRadius = Math.hypot(
-        Math.max(origin.x, window.innerWidth - origin.x),
-        Math.max(origin.y, window.innerHeight - origin.y),
+      // The reveal radius/origin drive a plain CSS @keyframes animation (styles.css), not the
+      // Web Animations API - animating a pseudo-element via element.animate() has much spottier
+      // browser support and silently no-ops on some engines, which just plays the browser's
+      // default cross-fade instead (looks like the reveal "starts from a random place").
+      const root = document.documentElement.style
+      root.setProperty('--theme-reveal-x', `${origin.x}px`)
+      root.setProperty('--theme-reveal-y', `${origin.y}px`)
+      root.setProperty(
+        '--theme-reveal-r',
+        `${Math.hypot(
+          Math.max(origin.x, window.innerWidth - origin.x),
+          Math.max(origin.y, window.innerHeight - origin.y),
+        )}px`,
       )
 
-      const transition = document.startViewTransition(() => flushSync(apply))
-
-      transition.ready
-        .then(() => {
-          document.documentElement.animate(
-            {
-              clipPath: [
-                `circle(0px at ${origin.x}px ${origin.y}px)`,
-                `circle(${endRadius}px at ${origin.x}px ${origin.y}px)`,
-              ],
-            },
-            {
-              duration: 500,
-              easing: 'ease-in-out',
-              pseudoElement: '::view-transition-new(root)',
-            },
-          )
-        })
-        .catch(() => {
-          // Transition aborted (e.g. another one started first) - the state change already applied.
+      document
+        .startViewTransition(() => flushSync(apply))
+        .ready.catch(() => {
+          // Superseded by another transition (e.g. rapid double-click) - the state change already applied.
         })
     },
     [theme],
