@@ -74,6 +74,23 @@ export function CompassIcon(props: IconProps) {
   )
 }
 
+export function SunIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 3.5v2M12 18.5v2M20.5 12h-2M5.5 12h-2M17.66 6.34l-1.42 1.42M7.76 16.24l-1.42 1.42M17.66 17.66l-1.42-1.42M7.76 7.76 6.34 6.34" />
+    </svg>
+  )
+}
+
+export function MoonIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M19.5 13.5a7.8 7.8 0 0 1-9.7-9.86A8 8 0 1 0 19.5 13.5Z" />
+    </svg>
+  )
+}
+
 
 
 

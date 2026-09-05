@@ -1,3 +1,19 @@
+/* Theme toggle view transition: a plain cut instead of the default cross-fade, so the
+   circular reveal animated from JS (clip-path on ::view-transition-new) is all you see. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
 :root {
   --cream: #f7f4ed;
   --charcoal: #1c1c1c;
@@ -34,6 +50,65 @@
   color-scheme: light;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --cream: #1a1a17;
+    --charcoal: #f3f1ea;
+    --offwhite: #161614;
+    --muted: #9b9994;
+    --border: #2b2b27;
+    --border-strong: rgba(255, 255, 255, 0.35);
+    --tint-3: rgba(255, 255, 255, 0.04);
+    --tint-4: rgba(255, 255, 255, 0.05);
+    --tint-8: rgba(255, 255, 255, 0.09);
+
+    --free: #6fae7e;
+    --free-tint: rgba(111, 174, 126, 0.16);
+    --soon: #d1a05a;
+    --soon-tint: rgba(209, 160, 90, 0.18);
+    --busy: #c97e6f;
+    --busy-tint: rgba(201, 126, 111, 0.14);
+    --unknown: rgba(255, 255, 255, 0.35);
+
+    --inset-shadow:
+      rgba(0, 0, 0, 0.15) 0 0.5px 0 0 inset,
+      rgba(0, 0, 0, 0.25) 0 0 0 0.5px inset,
+      rgba(0, 0, 0, 0.08) 0 1px 2px 0;
+    --focus-shadow: rgba(255, 255, 255, 0.28) 0 0 0 3px;
+
+    color-scheme: dark;
+  }
+}
+
+/* Explicit choice from the theme toggle wins over the OS setting either way. */
+:root[data-theme='dark'] {
+  --cream: #1a1a17;
+  --charcoal: #f3f1ea;
+  --offwhite: #161614;
+  --muted: #9b9994;
+  --border: #2b2b27;
+  --border-strong: rgba(255, 255, 255, 0.35);
+  --tint-3: rgba(255, 255, 255, 0.04);
+  --tint-4: rgba(255, 255, 255, 0.05);
+  --tint-8: rgba(255, 255, 255, 0.09);
+
+  --free: #6fae7e;
+  --free-tint: rgba(111, 174, 126, 0.16);
+  --soon: #d1a05a;
+  --soon-tint: rgba(209, 160, 90, 0.18);
+  --busy: #c97e6f;
+  --busy-tint: rgba(201, 126, 111, 0.14);
+  --unknown: rgba(255, 255, 255, 0.35);
+
+  --inset-shadow:
+    rgba(0, 0, 0, 0.15) 0 0.5px 0 0 inset,
+    rgba(0, 0, 0, 0.25) 0 0 0 0.5px inset,
+    rgba(0, 0, 0, 0.08) 0 1px 2px 0;
+  --focus-shadow: rgba(255, 255, 255, 0.28) 0 0 0 3px;
+
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -62,7 +137,7 @@ input {
 
 .header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
@@ -70,9 +145,27 @@ input {
 
 .header-title {
   margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.4px;
+  cursor: pointer;
+}
+
+.header-title:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-shadow);
+  border-radius: var(--radius-sm);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .header-time {
@@ -80,6 +173,35 @@ input {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.theme-toggle {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: var(--tint-8);
+  color: var(--charcoal);
+}
+
+.theme-toggle:active {
+  opacity: 0.7;
+}
+
+.theme-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-shadow);
 }
 
 /* Stale banner */

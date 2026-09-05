@@ -9,12 +9,13 @@ import { StaleBanner } from './components/StaleBanner'
 import { TopPick } from './components/TopPick'
 import { useMyRoom } from './hooks/useMyRoom'
 import { useNow } from './hooks/useNow'
+import { useTheme } from './hooks/useTheme'
 import { nearYouList, rankRooms, soonestToFree } from './rank'
 import type { Ranked } from './rank'
 import { fmtTime } from './status'
 import { searchScore } from './room'
 import type { Room, TodayPayload } from './types'
-import { SearchIcon, XIcon } from './icons'
+import { MoonIcon, SearchIcon, SunIcon, XIcon } from './icons'
 
 type Tab = 'free' | 'all'
 
@@ -29,6 +30,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Room | null>(null)
   const [myRoom, setMyRoom] = useMyRoom()
+  const [theme, toggleTheme] = useTheme()
 
   const load = useCallback(async () => {
     try {
@@ -38,6 +40,14 @@ export default function App() {
       setError(err instanceof Error ? err.message : 'Unknown error')
     }
   }, [])
+
+  /** Back to how the app looks on a fresh visit: no search, no chosen room, Free now tab. */
+  const reset = useCallback(() => {
+    setQuery('')
+    setTab('free')
+    setSelected(null)
+    setMyRoom(null)
+  }, [setMyRoom])
 
   useEffect(() => {
     load()
@@ -86,10 +96,25 @@ export default function App() {
   return (
     <div className="container">
       <header className="header">
-        <h1 className="header-title">Free Rooms</h1>
-        {data?.updatedAt && (
-          <span className="header-time">Updated {fmtTime(new Date(data.updatedAt))}</span>
-        )}
+        <button type="button" className="header-title" onClick={reset}>
+          Idlee
+        </button>
+        <div className="header-right">
+          {data?.updatedAt && (
+            <span className="header-time">Updated {fmtTime(new Date(data.updatedAt))}</span>
+          )}
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect()
+              toggleTheme({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
+            }}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? <SunIcon width={18} height={18} /> : <MoonIcon width={18} height={18} />}
+          </button>
+        </div>
       </header>
 
       {data?.updatedAt && isStale && (
