@@ -154,7 +154,6 @@ input {
   align-items: center;
   padding: 2px 7px;
   margin-left: 6px;
-  transform: rotate(-5deg);
   background: var(--charcoal);
   color: var(--offwhite);
   border-radius: 4px;
@@ -162,9 +161,43 @@ input {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.2px;
+  text-decoration: none;
   box-shadow: var(--inset-shadow);
-  pointer-events: none;
-  user-select: none;
+  cursor: pointer;
+  animation: credit-tag-wobble 3.4s ease-in-out infinite;
+  transition: transform 0.15s ease;
+}
+
+.credit-tag:hover {
+  animation-play-state: paused;
+  transform: rotate(0deg) scale(1.08);
+}
+
+.credit-tag:active {
+  transform: rotate(0deg) scale(0.96);
+}
+
+.credit-tag:focus-visible {
+  outline: none;
+  animation-play-state: paused;
+  box-shadow: var(--focus-shadow);
+}
+
+@keyframes credit-tag-wobble {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .credit-tag {
+    animation: none;
+    transform: rotate(-5deg);
+  }
 }
 
 .header-title {

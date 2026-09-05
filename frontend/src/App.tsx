@@ -100,7 +100,14 @@ export default function App() {
           <button type="button" className="header-title" onClick={reset}>
             Idlee
           </button>
-          <span className="credit-tag">by vizz</span>
+          <a
+            className="credit-tag"
+            href="https://visalan.me"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            by vizz
+          </a>
         </div>
         <div className="header-right">
           {data?.updatedAt && (
