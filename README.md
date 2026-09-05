@@ -1,63 +1,52 @@
 # Free Rooms
 
-Shows which classrooms are free right now.
+Find a classroom that is actually free, without walking the corridor and trying
+door handles.
 
-- Frontend: https://idlee.vercel.app
+- App: https://idlee.vercel.app
 - API: https://idlee-api.vercel.app
 
-```
-cron-job.org  ──POST /api/refresh──>  backend  ──fetch──>  learner.saveetha.in
-                                         │
-                                         ▼
-                                     Postgres
-                                         ▲
- frontend  ──GET /api/rooms──>  backend ─┘
-```
+## The problem
 
-Visitors never trigger a fetch to the college portal. Load there is fixed at one
-request per room per refresh, whether one person uses the site or five hundred.
+You have an hour between classes. Somewhere on campus there is an empty room
+with a whiteboard and a plug socket. Finding it means climbing to the third
+floor, peering through six door windows, and settling for whichever one looks
+quiet. By the time you sit down you have lost fifteen minutes.
 
-## Layout
+The timetable already knows the answer. It just does not tell anyone.
 
-```
-backend/
-├── .env.example
-└── src/
-    ├── index.ts                 express app, routes, listen
-    ├── config/db.ts             pg pool
-    ├── config/schema.sql
-    ├── routes/                  rooms.routes.ts, refresh.routes.ts
-    ├── controllers/             rooms.controller.ts, refresh.controller.ts
-    ├── middleware/auth.ts       checks x-refresh-secret
-    ├── services/                scraper, refresh, rooms
-    └── utils/time.ts            IST date
+## What the app does
 
-frontend/                        Vite + React
-├── .env.example
-└── src/
-    ├── App.tsx
-    ├── api.ts                   the only file that knows the API URL
-    ├── status.ts                free / soon / busy, computed in the browser
-    ├── components/
-    └── hooks/
+Open it and you get one room at the top, in large type, with how far away it is
+and how long it stays free. That is the whole product. Everything else is there
+for when the top answer does not suit you.
 
-qr-scanner/                      standalone page for scanning door QR codes
-```
+Tell it which room you are in and the ranking changes to match. `3654` means
+floor 3, row 6, column 5, so the app knows that `3652` is two doors down and
+`2654` is one floor below. It sorts by real walking distance, then by whichever
+room holds out longest before the next class claims it.
 
-## Why it's built this way
+Free now shows what you can walk into. All rooms shows the day for every room,
+free or not. Search understands floors, so typing `3` gives you the third floor
+rather than every room with a 3 buried in it.
 
-- The portal serves HTML with no CORS headers, so the browser can't read it directly.
-- Each response is capped at 4 session cards, which is one teaching day. A
-  `?scope=future` fetch before the first slot returns the whole day. Later runs
-  replace only sessions that haven't started, so the morning's capture survives.
-- Room URLs embed a per-room token. They live in the `rooms` table, never in the
-  repo and never in a response.
-- Instructor names, staff IDs and participant counts are on the page but are not
-  parsed or stored. The board only answers "is it free".
-- Vercel deploys Express with zero config because the entry is `src/index.ts` and
-  it exports the app. No `api/` directory, no `vercel.json`.
+Tap any room for its full day, class by class, with the current one marked.
 
-## Local
+## What it will not tell you
+
+Who is teaching, which class it is beyond the course name, or how many students
+are in it. That information sits on the same page the app reads and the parser
+walks straight past it. The app answers one question. Is this room free.
+
+Coverage is 100 rooms out of roughly 290. The rest are invisible to it, and an
+unmapped room looks the same as one with no classes. Scan a door QR with
+`qr-scanner/index.html` to add one.
+
+Schedules are read six times a day, not live. A class that gets moved at 11:05
+shows up at noon. The header tells you when the data last landed, and a banner
+appears if a refresh went missing.
+
+## Running it
 
 ```bash
 cd backend  && npm install && cp .env.example .env   # fill in DATABASE_URL
@@ -67,7 +56,10 @@ cd frontend && npm install && cp .env.example .env
 npm run dev                                          # :5173
 ```
 
-## Setup from scratch
+`FRONTEND_URL` in `backend/.env` has to match the port Vite actually picks. If
+another project is holding 5173, Vite moves up and CORS starts rejecting you.
+
+First run against an empty database:
 
 ```bash
 cd backend
@@ -76,35 +68,27 @@ npm run seed                        # load rooms from ../all_room_data.csv
 npm run refresh                     # fetch today's schedule once
 ```
 
-## Deploys
+## Layout
 
-Two Vercel projects from the same repo, each with its own root directory:
+```
+backend/                         express, deployed to idlee-api.vercel.app
+├── src/index.ts                 app, routes, exported for Vercel
+├── src/services/                scraper, refresh, rooms
+├── src/routes/ controllers/ middleware/
+└── vercel.json                  pins the region to bom1
 
-| Project | Root directory | Env vars |
-| --- | --- | --- |
-| `idlee-api` | `backend` | `DATABASE_URL`, `REFRESH_SECRET`, `FRONTEND_URL` |
-| `idlee` | `frontend` | `VITE_API_URL` |
+frontend/                        vite + react, deployed to idlee.vercel.app
+├── src/api.ts                   the only file that knows the API exists
+├── src/status.ts                free / soon / busy, computed in the browser
+├── src/room.ts                  decodes a room number into floor, row, column
+├── src/rank.ts                  distance first, then how long it stays free
+└── src/components/ hooks/
 
-`FRONTEND_URL` is what CORS allows. `VITE_API_URL` is baked into the frontend
-bundle at build time, so changing it needs a redeploy.
+qr-scanner/                      standalone page for scanning door QR codes
+```
 
-## The cron
+Deploys run on push to `main`. Each project builds only when its own directory
+changed.
 
-One job on cron-job.org: `POST https://idlee-api.vercel.app/api/refresh`
-with header `x-refresh-secret`. There's no query-parameter fallback, so the
-secret never lands in their request logs.
-
-Schedule, IST: **07:00, 09:00, 11:00, 12:00, 13:00, 14:00**, Mon–Sat — each one
-lands before a slot boundary. 600 requests a day, never more than 6 at once.
-
-100 rooms take about 17s. The function budget is 45s; past roughly 250 rooms a
-call stops early and returns `{"done": false, "nextOffset": N}`, which is the
-signal to add a second job at `?offset=N`.
-
-Don't raise `CONCURRENCY`. Pushing the portal harder got 503s back.
-
-## Adding rooms
-
-Scan the QR on the door with `qr-scanner/index.html`, append the URL to the CSV,
-re-run `npm run seed`. No redeploy — the refresh job reads the room list from the
-database at runtime.
+[ARCHITECTURE.md](ARCHITECTURE.md) covers why it is built this way, including
+the college portal's limits and what happens when you push it too hard.

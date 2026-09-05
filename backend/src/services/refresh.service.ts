@@ -75,7 +75,14 @@ export async function refreshAll(offset = 0, limit = 1000) {
   const attempted = ok + failed
   const done = attempted >= rooms.length
 
-  await pool.query('insert into refresh_runs (ok, failed, ms) values ($1, $2, $3)', [ok, failed, ms])
+  // ran_at is when the run started, so it lands on the cron's own schedule
+  // instead of a minute later once every room has been fetched.
+  await pool.query('insert into refresh_runs (ran_at, ok, failed, ms) values ($1, $2, $3, $4)', [
+    new Date(started),
+    ok,
+    failed,
+    ms,
+  ])
 
   return { ok, failed, rooms: rooms.length, ms, done, nextOffset: done ? null : offset + attempted }
 }
