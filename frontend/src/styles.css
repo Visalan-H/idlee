@@ -143,6 +143,50 @@ input {
   margin-bottom: 16px;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.credit-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  margin-left: 6px;
+  transform: rotate(-5deg);
+  background: var(--charcoal);
+  color: var(--offwhite);
+  border-radius: 4px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-decoration: none;
+  box-shadow: var(--inset-shadow);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.credit-tag:hover {
+  transform: rotate(0deg) scale(1.08);
+}
+
+.credit-tag:active {
+  transform: rotate(0deg) scale(0.96);
+}
+
+.credit-tag:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .credit-tag {
+    transition: none;
+  }
+}
+
 .header-title {
   margin: 0;
   padding: 0;
@@ -202,6 +246,10 @@ input {
 .theme-toggle:focus-visible {
   outline: none;
   box-shadow: var(--focus-shadow);
+}
+
+.theme-toggle[data-busy] {
+  pointer-events: none;
 }
 
 /* Stale banner */

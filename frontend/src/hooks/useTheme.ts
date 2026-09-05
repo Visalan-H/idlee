@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 
 const KEY = 'freerooms:theme'
@@ -17,10 +17,18 @@ function systemTheme(): Theme {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-/** Follows the OS setting live until the user picks one explicitly, then remembers that choice. */
+/**
+ * Follows the OS setting live until the user picks one explicitly, then remembers that choice.
+ *
+ * The circular reveal is the standard View Transitions recipe: kill the default crossfade on
+ * ::view-transition-old/new(root) in CSS, then animate a clip-path on the new-state pseudo-
+ * element once the transition is ready. `switching` gates the toggle button (data-busy +
+ * pointer-events:none) so a second click can't stack a transition on top of one still running.
+ */
 export function useTheme() {
   const [stored, setStored] = useState<Theme | null>(readStored)
   const [system, setSystem] = useState<Theme>(systemTheme)
+  const [switching, setSwitching] = useState(false)
 
   useLayoutEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
@@ -37,6 +45,8 @@ export function useTheme() {
 
   const toggle = useCallback(
     (origin?: { x: number; y: number }) => {
+      if (switching) return
+
       const next: Theme = theme === 'dark' ? 'light' : 'dark'
       const apply = () => {
         setStored(next)
@@ -53,6 +63,7 @@ export function useTheme() {
         return
       }
 
+      setSwitching(true)
       const endRadius = Math.hypot(
         Math.max(origin.x, window.innerWidth - origin.x),
         Math.max(origin.y, window.innerHeight - origin.y),
@@ -77,11 +88,15 @@ export function useTheme() {
           )
         })
         .catch(() => {
-          // Transition aborted (e.g. another one started first) - the state change already applied.
+          // Setup failed or the transition was superseded - the theme change already applied.
         })
+
+      transition.finished.finally(() => {
+        setSwitching(false)
+      })
     },
-    [theme],
+    [theme, switching],
   )
 
-  return [theme, toggle] as const
+  return { theme, toggle, switching }
 }

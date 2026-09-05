@@ -30,7 +30,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Room | null>(null)
   const [myRoom, setMyRoom] = useMyRoom()
-  const [theme, toggleTheme] = useTheme()
+  const { theme, toggle: toggleTheme, switching } = useTheme()
 
   const load = useCallback(async () => {
     try {
@@ -96,9 +96,19 @@ export default function App() {
   return (
     <div className="container">
       <header className="header">
-        <button type="button" className="header-title" onClick={reset}>
-          Idlee
-        </button>
+        <div className="header-left">
+          <button type="button" className="header-title" onClick={reset}>
+            Idlee
+          </button>
+          <a
+            className="credit-tag"
+            href="https://visalan.me"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            by vizz
+          </a>
+        </div>
         <div className="header-right">
           {data?.updatedAt && (
             <span className="header-time">Updated {fmtTime(new Date(data.updatedAt))}</span>
@@ -106,6 +116,7 @@ export default function App() {
           <button
             type="button"
             className="theme-toggle"
+            data-busy={switching || undefined}
             onClick={(e) => {
               const rect = e.currentTarget.getBoundingClientRect()
               toggleTheme({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
