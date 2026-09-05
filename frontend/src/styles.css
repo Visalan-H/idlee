@@ -1,6 +1,5 @@
-/* Theme toggle view transition: a circular reveal from the toggle button, driven by a plain
-   CSS animation (not element.animate() targeting the pseudo-element, which has much spottier
-   engine support and silently falls back to the default cross-fade when unsupported). */
+/* Theme toggle view transition: a plain cut instead of the default cross-fade, so the
+   circular reveal animated from JS (clip-path on ::view-transition-new) is all you see. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -13,16 +12,6 @@
 
 ::view-transition-new(root) {
   z-index: 2;
-  animation: theme-reveal 450ms ease-in-out;
-}
-
-@keyframes theme-reveal {
-  from {
-    clip-path: circle(0 at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%));
-  }
-  to {
-    clip-path: circle(var(--theme-reveal-r, 150%) at var(--theme-reveal-x, 50%) var(--theme-reveal-y, 50%));
-  }
 }
 
 :root {
@@ -152,6 +141,30 @@ input {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.credit-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  margin-left: 6px;
+  transform: rotate(-5deg);
+  background: var(--charcoal);
+  color: var(--offwhite);
+  border-radius: 4px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  box-shadow: var(--inset-shadow);
+  pointer-events: none;
+  user-select: none;
 }
 
 .header-title {

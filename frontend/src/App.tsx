@@ -96,9 +96,12 @@ export default function App() {
   return (
     <div className="container">
       <header className="header">
-        <button type="button" className="header-title" onClick={reset}>
-          Idlee
-        </button>
+        <div className="header-left">
+          <button type="button" className="header-title" onClick={reset}>
+            Idlee
+          </button>
+          <span className="credit-tag">by vizz</span>
+        </div>
         <div className="header-right">
           {data?.updatedAt && (
             <span className="header-time">Updated {fmtTime(new Date(data.updatedAt))}</span>

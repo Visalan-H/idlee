@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 
 const KEY = 'freerooms:theme'
@@ -21,6 +21,9 @@ function systemTheme(): Theme {
 export function useTheme() {
   const [stored, setStored] = useState<Theme | null>(readStored)
   const [system, setSystem] = useState<Theme>(systemTheme)
+  // A second tap mid-animation would start a new transition on top of the still-clipping old
+  // one, stacking two reveals and making the whole thing look laggy and misplaced. Guard against it.
+  const switching = useRef(false)
 
   useLayoutEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
@@ -37,6 +40,8 @@ export function useTheme() {
 
   const toggle = useCallback(
     (origin?: { x: number; y: number }) => {
+      if (switching.current) return
+
       const next: Theme = theme === 'dark' ? 'light' : 'dark'
       const apply = () => {
         setStored(next)
@@ -53,26 +58,37 @@ export function useTheme() {
         return
       }
 
-      // The reveal radius/origin drive a plain CSS @keyframes animation (styles.css), not the
-      // Web Animations API - animating a pseudo-element via element.animate() has much spottier
-      // browser support and silently no-ops on some engines, which just plays the browser's
-      // default cross-fade instead (looks like the reveal "starts from a random place").
-      const root = document.documentElement.style
-      root.setProperty('--theme-reveal-x', `${origin.x}px`)
-      root.setProperty('--theme-reveal-y', `${origin.y}px`)
-      root.setProperty(
-        '--theme-reveal-r',
-        `${Math.hypot(
-          Math.max(origin.x, window.innerWidth - origin.x),
-          Math.max(origin.y, window.innerHeight - origin.y),
-        )}px`,
+      switching.current = true
+      const endRadius = Math.hypot(
+        Math.max(origin.x, window.innerWidth - origin.x),
+        Math.max(origin.y, window.innerHeight - origin.y),
       )
 
-      document
-        .startViewTransition(() => flushSync(apply))
-        .ready.catch(() => {
-          // Superseded by another transition (e.g. rapid double-click) - the state change already applied.
+      const transition = document.startViewTransition(() => flushSync(apply))
+
+      transition.ready
+        .then(() => {
+          document.documentElement.animate(
+            {
+              clipPath: [
+                `circle(0px at ${origin.x}px ${origin.y}px)`,
+                `circle(${endRadius}px at ${origin.x}px ${origin.y}px)`,
+              ],
+            },
+            {
+              duration: 500,
+              easing: 'ease-in-out',
+              pseudoElement: '::view-transition-new(root)',
+            },
+          )
         })
+        .catch(() => {
+          // Setup failed or the transition was superseded - the theme change already applied.
+        })
+
+      transition.finished.finally(() => {
+        switching.current = false
+      })
     },
     [theme],
   )
