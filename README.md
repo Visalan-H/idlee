@@ -1,4 +1,4 @@
-# Free Rooms
+# Idlee
 
 Find a classroom that is actually free, without walking the corridor and trying
 door handles.

@@ -47,7 +47,7 @@ export function parse(html: string) {
 
 async function fetchSessions(url: string) {
   const res = await fetch(url, {
-    headers: { 'User-Agent': 'room-free/1.0', Accept: 'text/html' },
+    headers: { 'User-Agent': 'idlee/1.0', Accept: 'text/html' },
     signal: AbortSignal.timeout(15_000),
   })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
