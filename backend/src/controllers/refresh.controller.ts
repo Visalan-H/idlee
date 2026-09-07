@@ -24,10 +24,13 @@ export function runRefresh(req: Request, res: Response) {
   res.status(202).json({ started: true, offset, limit })
 }
 
-// One cron calls this every minute. It scrapes when the current IST time is at
-// or up to REFRESH_GRACE_MIN minutes past one of REFRESH_TARGETS, never before.
-// So a target of 08:00 fires on a tick at 08:00 through 08:03, not 07:59.
-// Target times live in env so the schedule changes without a deploy.
+// One cron calls this every five minutes. It scrapes when the current IST time
+// is at or up to REFRESH_GRACE_MIN minutes past one of REFRESH_TARGETS, never
+// before. So a target of 08:00 fires on a tick at 08:00 through 08:05, not
+// 07:59. Target times live in env so the schedule changes without a deploy.
+//
+// The default grace matches the cron interval. A narrower window than the
+// interval lets a target fall between two ticks and lose the slot for the day.
 export async function runTick(_req: Request, res: Response) {
   const targets = (process.env.REFRESH_TARGETS ?? '')
     .split(',')
@@ -35,7 +38,7 @@ export async function runTick(_req: Request, res: Response) {
     .filter(Boolean)
 
   const graceRaw = Number(process.env.REFRESH_GRACE_MIN)
-  const grace = Number.isFinite(graceRaw) && graceRaw >= 0 ? graceRaw : 3
+  const grace = Number.isFinite(graceRaw) && graceRaw >= 0 ? graceRaw : 5
 
   const ist = istHm()
   const nowMin = hmToMinutes(ist)

@@ -45,7 +45,7 @@ moves a handful of times a day, and six runs at 100 rooms is 600 requests, a
 rounding error next to what students themselves generate.
 
 A cron per boundary would work but puts the schedule in the cron-job.org
-dashboard, out of the repo. Instead there is one cron every minute and
+dashboard, out of the repo. Instead there is one cron every five minutes and
 `POST /api/refresh/tick` decides whether now is a boundary. `REFRESH_TARGETS`
 holds the IST times as `HH:mm`; changing them is an env edit, not a deploy.
 Weekdays stay in the cron expression.
