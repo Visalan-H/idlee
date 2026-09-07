@@ -51,10 +51,12 @@ holds the IST times as `HH:mm`; changing them is an env edit, not a deploy.
 Weekdays stay in the cron expression.
 
 The tick reads the clock in IST, since Vercel runs UTC and India has no DST so
-the offset is a fixed +5:30. A minute-interval cron puts exactly one tick in
-each target's minute, so a plain string match is enough, no tolerance window. As
-a guard against the cron double-tapping a minute, the tick skips if
-`refresh_runs` has a row from the last three minutes.
+the offset is a fixed +5:30. It fires when now is at a target or up to
+`REFRESH_GRACE_MIN` minutes past it, never before, so a scrape never runs
+against a slot that has not started. The grace window means several ticks match
+one target; the first writes `refresh_runs` and the rest see that row and stop,
+so the scrape fires once. Keep the window at least as wide as the cron interval
+or a slot can fall between two ticks and be missed.
 
 The cost is honesty about staleness. A class moved at 11:05 is wrong until the
 next boundary. The UI carries the last refresh time and a banner appears when a

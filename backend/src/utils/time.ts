@@ -17,3 +17,14 @@ export function istHm(now = new Date()) {
     hour12: false,
   }).format(now)
 }
+
+// Minutes since midnight for an "HH:mm" string. NaN on a malformed value so the
+// caller can drop it.
+export function hmToMinutes(hm: string) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hm.trim())
+  if (!m) return NaN
+  const h = Number(m[1])
+  const min = Number(m[2])
+  if (h > 23 || min > 59) return NaN
+  return h * 60 + min
+}

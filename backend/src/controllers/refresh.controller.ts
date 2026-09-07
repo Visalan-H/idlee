@@ -2,7 +2,7 @@ import type { Request, Response } from 'express'
 import { waitUntil } from '@vercel/functions'
 import { pool } from '../config/db.js'
 import { refreshAll } from '../services/refresh.service.js'
-import { istHm } from '../utils/time.js'
+import { hmToMinutes, istHm } from '../utils/time.js'
 
 export function runRefresh(req: Request, res: Response) {
   const offset = Math.max(0, Number(req.query.offset) || 0)
@@ -24,28 +24,38 @@ export function runRefresh(req: Request, res: Response) {
   res.status(202).json({ started: true, offset, limit })
 }
 
-// One cron calls this every minute. It scrapes only when the current IST time
-// matches one of REFRESH_TARGETS. Target times live in env so the schedule
-// changes without a deploy.
+// One cron calls this every minute. It scrapes when the current IST time is at
+// or up to REFRESH_GRACE_MIN minutes past one of REFRESH_TARGETS, never before.
+// So a target of 08:00 fires on a tick at 08:00 through 08:03, not 07:59.
+// Target times live in env so the schedule changes without a deploy.
 export async function runTick(_req: Request, res: Response) {
   const targets = (process.env.REFRESH_TARGETS ?? '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
 
-  const ist = istHm()
+  const graceRaw = Number(process.env.REFRESH_GRACE_MIN)
+  const grace = Number.isFinite(graceRaw) && graceRaw >= 0 ? graceRaw : 3
 
-  if (!targets.includes(ist)) {
+  const ist = istHm()
+  const nowMin = hmToMinutes(ist)
+
+  const matched = targets.find((t) => {
+    const delta = nowMin - hmToMinutes(t)
+    return delta >= 0 && delta <= grace
+  })
+
+  if (!matched) {
     return res.json({ ok: true, ist, triggered: false })
   }
 
-  // A minute-interval cron lands one tick in the target minute. If it ever
-  // double-taps, this stops the second one spending the scrape again.
-  const recent = await pool.query(
-    "select 1 from refresh_runs where ran_at > now() - interval '3 minutes' limit 1",
-  )
+  // The grace window means several ticks match the same target. The first runs
+  // the scrape and writes refresh_runs; the rest see that row and stop, so the
+  // scrape fires once per slot. The lookback covers the whole window plus slack.
+  const since = new Date(Date.now() - (grace + 1) * 60_000)
+  const recent = await pool.query('select 1 from refresh_runs where ran_at > $1 limit 1', [since])
   if (recent.rowCount) {
-    return res.json({ ok: true, ist, triggered: false, reason: 'ran recently' })
+    return res.json({ ok: true, ist, matched, triggered: false, reason: 'ran recently' })
   }
 
   const job = refreshAll().catch((err) => {
@@ -58,5 +68,5 @@ export async function runTick(_req: Request, res: Response) {
     // Not on Vercel.
   }
 
-  res.status(202).json({ ok: true, ist, triggered: true })
+  res.status(202).json({ ok: true, ist, matched, triggered: true })
 }
