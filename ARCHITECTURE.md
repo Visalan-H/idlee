@@ -177,8 +177,8 @@ can hold it, and labels stay correct as time passes without a refetch.
 ### Edge caching over a database round trip
 
 `GET /api/rooms` sets `s-maxage=600, stale-while-revalidate=1800`. The data
-changes six times a day, so ten minutes of edge cache costs nothing in accuracy
-and means traffic spikes never reach Neon.
+changes a handful of times a day, so ten minutes of edge cache costs nothing in
+accuracy and means traffic spikes never reach Neon.
 
 ### No polling
 
