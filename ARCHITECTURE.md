@@ -37,20 +37,30 @@ result goes to Postgres. Load on the portal is one request per room per refresh
 whether one person uses the app or five hundred. That number is knowable in
 advance and does not change.
 
-### Six refreshes a day, aligned to slot boundaries
+### One cron, a handful of scrapes a day
 
-Slots start at 7:30, 8:00, 9:45, 11:15, 11:30, 12:15, 13:15 and 15:00. The cron
-runs at 07:00, 09:00, 11:00, 12:00, 13:00 and 14:00 IST, Monday to Saturday,
-each one landing just before a boundary so a room's state is fresh at the moment
-it changes.
+The scrape should only run at slot boundaries, six or so times a day. Polling
+every fifteen minutes was the first instinct and it is wasteful: the timetable
+moves a handful of times a day, and six runs at 100 rooms is 600 requests, a
+rounding error next to what students themselves generate.
 
-Polling every fifteen minutes was the first instinct and it is wasteful. The
-timetable moves a handful of times a day. Six runs at 100 rooms is 600 requests
-daily, which is a rounding error next to what students themselves generate.
+A cron per boundary would work but puts the schedule in the cron-job.org
+dashboard, out of the repo. Instead there is one cron every five minutes and
+`POST /api/refresh/tick` decides whether now is a boundary. `REFRESH_TARGETS`
+holds the IST times as `HH:mm`; changing them is an env edit, not a deploy.
+Weekdays stay in the cron expression.
 
-The cost is honesty about staleness. A class moved at 11:05 is wrong until noon.
-The UI carries the last refresh time and a banner appears when a run goes
-missing, rather than pretending the data is live.
+The tick reads the clock in IST, since Vercel runs UTC and India has no DST so
+the offset is a fixed +5:30. It fires when now is at a target or up to
+`REFRESH_GRACE_MIN` minutes past it, never before, so a scrape never runs
+against a slot that has not started. The grace window means several ticks match
+one target; the first writes `refresh_runs` and the rest see that row and stop,
+so the scrape fires once. Keep the window at least as wide as the cron interval
+or a slot can fall between two ticks and be missed.
+
+The cost is honesty about staleness. A class moved at 11:05 is wrong until the
+next boundary. The UI carries the last refresh time and a banner appears when a
+run goes missing, rather than pretending the data is live.
 
 ### Deleting only the future
 
@@ -120,9 +130,10 @@ consumer has to remember. Someone always forgets.
 
 ### Secret in a header, no query fallback
 
-`POST /api/refresh` requires `x-refresh-secret`, compared with `timingSafeEqual`.
-There is no `?secret=` fallback on purpose. Query strings show up in request
-logs, and cron-job.org displays the full URL of every run in its dashboard.
+`POST /api/refresh` and `POST /api/refresh/tick` both require `x-refresh-secret`,
+compared with `timingSafeEqual`. There is no `?secret=` fallback on purpose.
+Query strings show up in request logs, and cron-job.org displays the full URL of
+every run in its dashboard.
 
 ### 202 and waitUntil
 
@@ -242,8 +253,8 @@ can hold it, and labels stay correct as time passes without a refetch.
 ### Edge caching over a database round trip
 
 `GET /api/rooms` sets `s-maxage=600, stale-while-revalidate=1800`. The data
-changes six times a day, so ten minutes of edge cache costs nothing in accuracy
-and means traffic spikes never reach Neon.
+changes a handful of times a day, so ten minutes of edge cache costs nothing in
+accuracy and means traffic spikes never reach Neon.
 
 ### No polling
 

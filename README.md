@@ -46,7 +46,7 @@ Who's teaching, which section it is, or how many students are in there. All of t
 
 100 rooms out of roughly 290. The rest are invisible to it, and an unmapped room looks the same as one with no classes. Closing that gap is corridor work with the QR scanner page, the same walk that started this.
 
-Schedules are read six times a day, not live. A class moved at 11:05 shows up at noon. The header tells you when the data last landed, and a banner appears if a refresh went missing.
+Schedules are read a handful of times a day, at class-slot boundaries, not live. A class moved at 11:05 shows up at the next boundary. The header tells you when the data last landed, and a banner appears if a refresh went missing.
 
 ## Under the hood
 
