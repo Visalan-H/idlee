@@ -3,6 +3,7 @@ import type { Room } from '../types'
 import { fmtTime, relative, statusOf } from '../status'
 import { distanceLabel, locationLabel, getRoomFloor } from '../room'
 import { CheckIcon, XIcon, PinIcon } from '../icons'
+import { RoomFacts } from './RoomFacts'
 
 interface Props {
   room: Room | null
@@ -115,6 +116,8 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props)
               <div className="no-classes">Nothing booked today.</div>
             )}
           </div>
+
+          <RoomFacts room={room} />
 
           {room.fetchedAt && (
             <div className="dialog-footer">Checked {relative(room.fetchedAt, now)}</div>

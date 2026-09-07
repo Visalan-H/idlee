@@ -26,3 +26,16 @@ create table if not exists refresh_runs (
   failed integer not null default 0,
   ms     integer not null default 0
 );
+
+create table if not exists room_votes (
+  id         serial primary key,
+  room_id    integer not null references rooms(id) on delete cascade,
+  attribute  text not null,
+  value      text not null,
+  -- sha256 of the browser's local id and a server salt. The raw id never lands here.
+  voter      text not null,
+  created_at timestamptz not null default now(),
+  unique (room_id, attribute, voter)
+);
+
+create index if not exists room_votes_room_idx on room_votes (room_id, attribute);

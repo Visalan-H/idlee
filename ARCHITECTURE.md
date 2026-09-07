@@ -4,12 +4,12 @@ Why this app is shaped the way it is. Each section states the constraint first,
 because most of these decisions are forced rather than chosen.
 
 ```
-cron-job.org  ──POST /api/refresh──>  backend  ──fetch──>  learner.saveetha.in
-                                         │
-                                         ▼
+cron-job.org  â”€â”€POST /api/refreshâ”€â”€>  backend  â”€â”€fetchâ”€â”€>  learner.saveetha.in
+                                         â”‚
+                                         â–¼
                                      Postgres
-                                         ▲
- frontend  ──GET /api/rooms──>  backend ─┘
+                                         â–²
+ frontend  â”€â”€GET /api/roomsâ”€â”€>  backend â”€â”˜
 ```
 
 ## The source and its three limits
@@ -83,8 +83,9 @@ The schedule is relational and the queries are joins. More to the point, room
 comments are a plausible next feature, and a comments table wants a real
 database. Neon's free tier covers this size of data comfortably.
 
-Three tables. `rooms` holds the number, location id, token and `fetched_at`.
-`sessions` holds one row per class. `refresh_runs` holds one row per cron run.
+`rooms` holds the number, location id, token and `fetched_at`. `sessions` holds
+one row per class. `refresh_runs` holds one row per cron run. `room_votes` holds
+what students say about a room.
 
 ### Tokens live in exactly one place
 
@@ -152,6 +153,81 @@ At 100 rooms a run takes about 19 seconds from `bom1`, so there is headroom.
 Past roughly 250 rooms a run will start truncating, and the fix is a second cron
 entry at `?offset=N` rather than a bigger machine.
 
+## Crowd facts
+
+### The scrape cannot see the room
+
+A timetable says when a room is booked. It does not say whether the AC works,
+whether there is anywhere to plug a laptop in, whether the phone has signal, or
+whether the door is ever actually open. Those decide whether a free room is
+usable, and they only exist in the memory of people who have walked in.
+
+So there is a fourth table. `room_votes` holds one row per person per attribute
+per room, unique on `(room_id, attribute, voter)`, and a second vote updates the
+first rather than stacking on it.
+
+### Attributes are data, not columns
+
+`ATTRIBUTES` in `config/attributes.ts` maps a key to its allowed values, and the
+table stores both as text. Adding "projector works" is an entry in that object
+and a matching entry in the frontend's copy. No migration, no column, no
+deploy ordering to think about.
+
+The cost is that the two lists can drift. The backend rejects any pair it does
+not recognise, so drift shows up as a 400 rather than a bad row.
+
+### Three votes and sixty percent, or nothing
+
+One vote is one person's Tuesday. A 50/50 split is not a fact. A value displays
+only once an attribute has three votes and a clear majority, and otherwise the
+room shows nothing rather than a guess.
+
+Votes expire after 90 days. A room gets a new lock, an AC unit dies, and the
+tally follows within a term instead of carrying 2024 forever.
+
+### Voting without accounts
+
+The browser generates a random id, keeps it in localStorage, and sends it as
+`x-voter-id`. That is the whole identity system. Clearing storage earns a new
+vote, and this is a known and accepted limit; the alternative is a login, which
+would cost more users than ballot stuffing ever will.
+
+The id is salted and hashed before it reaches Postgres, so the table cannot be
+read as a per-device history of which rooms someone has been in, which is the
+same reasoning that keeps instructor names out of the parser.
+
+### No rate limiting, and no IP in the database
+
+An earlier version capped votes per IP per day. Two problems. The campus sits
+behind one NAT, so every student shares an address and the cap would have locked
+out the whole college partway through a day, which is a far larger failure than
+the one it was guarding against. And storing an IP at all, hashed or not,
+reintroduces exactly the identifier the voter hash was designed to avoid.
+
+The realistic load is a few dozen people who care enough to tap a button. What
+protects the data is the display rule, three votes and sixty percent, plus the
+90 day expiry. Stuffing a ballot requires sustained effort for no payoff, and if
+it ever happens the rows carry `created_at` and can be deleted by time window.
+
+Fingerprinting was considered and rejected for the same reason. Entropy
+collapses across a few thousand students on similar phones and the same browser
+build, so it would merge real people and silently discard honest votes, while
+adding a consent obligation and a tracking library to defend a vote about air
+conditioning. If real enforcement is ever needed, the door QR token already
+proves someone stood at that room, which is a better qualification than identity.
+
+### A vote takes ten minutes to show up for everyone else
+
+Tallies ride along in `GET /api/rooms`, which sits behind `s-maxage=600`. Giving
+votes their own uncached endpoint would mean a second request per room and a
+cache-busting one at that, to deliver counts that change a handful of times a
+week.
+
+So the voter sees their own choice immediately, from localStorage, and everyone
+else sees it at the next edge revalidation. The count next to an option can
+therefore lag the button state by a few minutes. That is the intended trade, not
+a bug to fix.
+
 ## Serving
 
 ### Status is computed in the browser
@@ -197,11 +273,56 @@ Rooms outside the scheme, like `CLS03`, return null from every function in
 `room.ts`, and every caller handles null. An unparseable room still appears, it
 just cannot be ranked by distance.
 
-### Ranking is distance first, duration second
+### Ranking is one number, and that number is steps
 
-Closest room wins. Ties break on whichever room stays free longest, then on room
-number so the order is stable. When nothing is free at all, the app names the
-room that frees up soonest instead of showing an empty list.
+Every free room gets a `cost`, and the lowest wins. Cost is walking distance
+plus what the room's settled votes are worth, both in grid steps, where a floor
+is 12. Ties break on whichever room stays free longest, then on room number so
+the order is stable.
+
+Votes belong in the ranking rather than beside it. A room that is free and
+locked is not a room you can use, and printing "usually locked" under a room the
+app has just put at the top is telling the student to do the sorting themselves.
+
+`door: locked` costs 40, more than three floors. Everything else is small on
+purpose: air conditioning is worth 2 steps, charging ports 3 or 4, signal 2 or
+3. A perfect room saves 9 steps, which is less than one floor, so the ranking
+never sends anyone upstairs past a free room for the sake of a plug socket.
+
+### The scale is signed, because penalties alone reward silence
+
+The first version only ever added cost, so a good vote was worth nothing and a
+bad one hurt. That quietly promotes every room nobody has been in, which is
+exactly backwards when 190 of 290 rooms are unmapped: saying nothing about a
+room would have made it look ideal.
+
+So a room with no votes sits at zero, in the middle, and settled votes move it
+either way. `open`, `ac`, `many`, `strong` are negative. Their opposites are
+positive.
+
+The one place the scale stays lopsided is the door. `locked` is +40 while `open`
+is only -2, because a door being open is what you already assumed and a locked
+one throws the whole answer away.
+
+### Weights live in one table
+
+`COST` in `facts.ts` is the whole ranking policy, four lines of numbers next to
+the comment explaining what a step is worth. Anyone retuning this is editing
+data, not logic, and the numbers can be argued about without reading `rank.ts`.
+
+### An unplaceable room sorts last, not first
+
+Rooms outside the numbering scheme have no distance, so they take a cost of 999,
+which beats the worst real room by a wide margin. The earlier code used
+`MAX_SAFE_INTEGER` at sort time; folding it into the cost means votes still
+order those rooms among themselves.
+
+### The consolation pick skips locked rooms
+
+When nothing is free, the app names the room that frees up soonest. It now
+prefers one nobody calls locked, and falls back to the locked one only when
+every candidate is locked. Waiting twenty minutes for a door that does not open
+is the worst answer the app could give.
 
 ### Search scores, it does not filter
 
