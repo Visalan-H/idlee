@@ -14,3 +14,12 @@ export async function fetchToday(): Promise<TodayPayload> {
   }
   return res.json()
 }
+
+export async function castVote(room: string, attribute: string, value: string, voterId: string) {
+  const res = await fetch(`${BASE}/api/rooms/${encodeURIComponent(room)}/votes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-voter-id': voterId },
+    body: JSON.stringify({ attribute, value }),
+  })
+  if (!res.ok) throw new Error("Couldn't save that vote.")
+}

@@ -1,6 +1,7 @@
 import { distanceLabel, getRoomFloor } from '../room'
 import { ChevronRightIcon } from '../icons'
 import type { Ranked } from '../rank'
+import { FactChips } from './FactChips'
 
 interface Props {
   ranked: Ranked
@@ -20,6 +21,7 @@ export function RoomRow({ ranked, myRoom, onOpen }: Props) {
         <div className="room-row-title-wrap">
           <span className="room-row-name">{room.room}</span>
           <span className="room-row-floor">{floor}</span>
+          <FactChips facts={room.facts} limit={2} />
         </div>
       </div>
 

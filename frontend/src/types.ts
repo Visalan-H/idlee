@@ -4,11 +4,15 @@ export interface RoomSession {
   course: string | null
 }
 
+/** attribute -> value -> how many people voted for it */
+export type Facts = Record<string, Record<string, number>>
+
 export interface Room {
   room: string
   fresh: boolean
   fetchedAt: string | null
   sessions: RoomSession[]
+  facts?: Facts
 }
 
 export interface TodayPayload {

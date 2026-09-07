@@ -1,5 +1,6 @@
 import type { Room, Status } from '../types'
 import { getRoomFloor } from '../room'
+import { FactChips } from './FactChips'
 
 interface Props {
   room: Room
@@ -25,6 +26,8 @@ export function RoomCard({ room, status, onOpen }: Props) {
         <span className={`status-dot ${status.kind}`} />
         <span className="card-status-label">{status.label}</span>
       </div>
+
+      <FactChips facts={room.facts} limit={2} />
     </button>
   )
 }

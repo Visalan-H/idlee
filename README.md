@@ -24,11 +24,23 @@ Open it and there's one room at the top, in large type, with how far away it is 
 
 Tell it which room you're in and the ranking changes to match. Room numbers are coordinates: `3654` is floor 3, row 6, column 5. So `3652` is two doors down and `2654` is one floor below. It sorts by walking distance first, then by whichever room holds out longest before the next class takes it.
 
+What people have voted on moves the order too, measured in the same steps. A room three doors away that everyone says is locked loses to one at the far end of the corridor, because a door that doesn't open is not a shortcut. The softer things count for less. Air conditioning is worth about two doors, so the app will never send you up a floor chasing a plug socket when there's a plain empty room right here.
+
 Free now shows what you can walk into. All rooms shows the day for every room, free or not. Search understands floors, so typing `3` gives you the third floor instead of every room with a 3 in it, and `ground` works too. Tap a room for its full day, class by class, with the current one marked.
+
+## The things a timetable can't know
+
+A room being unbooked doesn't make it usable. The door might be locked anyway. There might be no AC, no plug socket you can reach, no signal to tether from. The portal knows none of this and never will, because nobody writes it down.
+
+So the room card asks you. Four questions, one tap each. Is the door usually open or usually locked. AC or no AC. Plenty of charging ports, a few, or none. Signal strong, patchy, or dead.
+
+No account, no name attached. Your browser holds a random id so you can change your answer later, and it's hashed before it's stored, so the table can't be read as a record of which rooms you've been sitting in.
+
+A room only shows a fact once three people agree and at least sixty percent of them said the same thing. Below that it stays blank, because one person's Tuesday isn't a fact. Answers older than three months stop counting, so a room that gets a new lock or a dead AC catches up on its own.
 
 ## What it won't tell you
 
-Who's teaching, which section it is, or how many students are in there. All of that sits on the same page the app reads, and it walks past it. Idlee answers one question. Is this room free.
+Who's teaching, which section it is, or how many students are in there. All of that sits on the same page the app reads, and it walks past it. Storing what you don't need turns a scheduling convenience into a surveillance question you have to defend.
 
 ## What it doesn't cover yet
 

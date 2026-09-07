@@ -1,5 +1,7 @@
 import { pool } from '../config/db.js'
 import { istToday } from '../utils/time.js'
+import { getFacts } from './votes.service.js'
+import type { Facts } from './votes.service.js'
 
 interface Row {
   room_no: string
@@ -15,12 +17,14 @@ interface RoomDay {
   fresh: boolean
   fetchedAt: string | null
   sessions: { startsAt: string; endsAt: string; course: string | null }[]
+  /** Crowd votes, omitted for rooms nobody has voted on. */
+  facts?: Facts
 }
 
 export async function getToday() {
   const day = istToday()
 
-  const [{ rows }, lastRun] = await Promise.all([
+  const [{ rows }, lastRun, facts] = await Promise.all([
     pool.query<Row>(
       `select r.room_no,
               r.fetched_at > now() - interval '20 hours' as fresh,
@@ -35,6 +39,7 @@ export async function getToday() {
     pool.query<{ ran_at: Date }>(
       'select ran_at from refresh_runs order by ran_at desc limit 1',
     ),
+    getFacts(),
   ])
 
   const byRoom = new Map<string, RoomDay>()
@@ -57,6 +62,11 @@ export async function getToday() {
         course: row.course,
       })
     }
+  }
+
+  for (const [room, tally] of facts) {
+    const entry = byRoom.get(room)
+    if (entry) entry.facts = tally
   }
 
   const roomList = [...byRoom.values()]
