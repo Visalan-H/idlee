@@ -47,6 +47,7 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props)
     >
       {room && (
         <div className="dialog-inner">
+          <div className="sheet-handle" aria-hidden="true" />
           <div className="dialog-header">
             <div>
               <div className="dialog-meta-line">
