@@ -27,7 +27,7 @@ export const CARRIERS = [
   { key: 'bsnl', label: 'BSNL' },
 ] as const
 
-const CARRIER_KEYS: string[] = CARRIERS.map((c) => c.key)
+export const CARRIER_KEYS: string[] = CARRIERS.map((c) => c.key)
 
 /** Mirrors ATTRIBUTES in the backend. Keys and values must match or the vote is rejected. */
 export const ATTRIBUTES: AttributeDef[] = [
@@ -62,11 +62,21 @@ export const ATTRIBUTES: AttributeDef[] = [
       label: c.label,
       options: [
         { value: 'yes', label: 'Works', short: `${c.label} works` },
-        { value: 'no', label: 'No signal', short: `No ${c.label}`, warn: true },
+        { value: 'no', label: 'Dead', short: `No ${c.label}`, warn: true },
       ],
     }),
   ),
 ]
+
+/** The carrier attributes, in declared order, for the grouped "Phone signal" block. */
+export const CARRIER_ATTRIBUTES: AttributeDef[] = ATTRIBUTES.filter((a) =>
+  CARRIER_KEYS.includes(a.key),
+)
+
+/** Everything except the carriers, which the voting UI renders on their own. */
+export const PLAIN_ATTRIBUTES: AttributeDef[] = ATTRIBUTES.filter(
+  (a) => !CARRIER_KEYS.includes(a.key),
+)
 
 /**
  * Below three votes one person decides the room, and a 50/50 split is not a
