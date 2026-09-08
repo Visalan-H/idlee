@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Room } from '../types'
 import { fmtTime, relative, statusOf } from '../status'
 import { distanceLabel, locationLabel, getRoomFloor } from '../room'
@@ -22,30 +22,49 @@ const STATUS_TITLE: Record<string, string> = {
 
 export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
+  // The last room stays on screen through the slide-down, after `room` is already null.
+  const [shown, setShown] = useState<Room | null>(room)
 
   useEffect(() => {
     const dialog = ref.current
     if (!dialog) return
-    if (room && !dialog.open) dialog.showModal()
-    else if (!room && dialog.open) dialog.close()
+    if (room) {
+      setShown(room)
+      if (!dialog.open) dialog.showModal()
+    } else if (dialog.open) {
+      dialog.close()
+    }
   }, [room])
 
-  const status = room ? statusOf(room, now) : null
-  const where = room ? locationLabel(room.room) : null
-  const floor = room ? getRoomFloor(room.room) : null
-  const from = room && myRoom ? distanceLabel(myRoom, room.room) : null
-  const isCurrent = !!myRoom && !!room && myRoom === room.room
+  // Drop the content once the sheet has finished sliding out.
+  useEffect(() => {
+    if (room) return
+    const t = setTimeout(() => setShown(null), 400)
+    return () => clearTimeout(t)
+  }, [room])
+
+  const view = shown
+  const status = view ? statusOf(view, now) : null
+  const where = view ? locationLabel(view.room) : null
+  const floor = view ? getRoomFloor(view.room) : null
+  const from = view && myRoom ? distanceLabel(myRoom, view.room) : null
+  const isCurrent = !!myRoom && !!view && myRoom === view.room
 
   return (
     <dialog
       ref={ref}
       className="dialog"
       onClose={onClose}
+      onTransitionEnd={(e) => {
+        if (e.target === ref.current && e.propertyName === 'translate' && !room) {
+          setShown(null)
+        }
+      }}
       onClick={(e) => {
         if (e.target === ref.current) onClose()
       }}
     >
-      {room && (
+      {view && (
         <div className="dialog-inner">
           <div className="sheet-handle" aria-hidden="true" />
           <div className="dialog-header">
@@ -54,7 +73,7 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props)
                 <span className="dialog-floor">{floor}</span>
                 {from && <span className="dialog-distance">· {from}</span>}
               </div>
-              <h2 className="dialog-title">{room.room}</h2>
+              <h2 className="dialog-title">{view.room}</h2>
               {where && <div className="dialog-sub">{where}</div>}
             </div>
 
@@ -82,7 +101,7 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props)
             <button
               type="button"
               className="btn btn-subtle btn-block"
-              onClick={() => onSetLocation(room.room)}
+              onClick={() => onSetLocation(view.room)}
             >
               <PinIcon width={13} height={13} />
               I am in this room
@@ -96,9 +115,9 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props)
 
           <div className="dialog-schedule">
             <h3 className="schedule-heading">Classes today</h3>
-            {room.sessions.length > 0 ? (
+            {view.sessions.length > 0 ? (
               <div className="schedule-list">
-                {room.sessions.map((s) => {
+                {view.sessions.map((s) => {
                   const start = new Date(s.startsAt)
                   const end = new Date(s.endsAt)
                   const isLive = start <= now && now < end
@@ -118,10 +137,10 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props)
             )}
           </div>
 
-          <RoomFacts room={room} />
+          <RoomFacts room={view} />
 
-          {room.fetchedAt && (
-            <div className="dialog-footer">Checked {relative(room.fetchedAt, now)}</div>
+          {view.fetchedAt && (
+            <div className="dialog-footer">Checked {relative(view.fetchedAt, now)}</div>
           )}
         </div>
       )}

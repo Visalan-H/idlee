@@ -953,14 +953,20 @@ input {
   color: var(--charcoal);
   overflow: hidden;
   translate: 0 100%;
+  /* Exit: quick ease-in slide down. */
   transition:
-    translate 0.34s cubic-bezier(0.32, 0.72, 0, 1),
-    overlay 0.34s allow-discrete,
-    display 0.34s allow-discrete;
+    translate 0.24s ease-in,
+    overlay 0.24s allow-discrete,
+    display 0.24s allow-discrete;
 }
 
 .dialog[open] {
   translate: 0 0;
+  /* Enter: slightly longer, with an overshoot-free settle. */
+  transition:
+    translate 0.36s cubic-bezier(0.32, 0.72, 0, 1),
+    overlay 0.36s allow-discrete,
+    display 0.36s allow-discrete;
 }
 
 @starting-style {
@@ -972,13 +978,14 @@ input {
 .dialog::backdrop {
   background: rgba(28, 28, 28, 0);
   transition:
-    background 0.34s ease,
-    overlay 0.34s allow-discrete,
-    display 0.34s allow-discrete;
+    background 0.24s ease,
+    overlay 0.24s allow-discrete,
+    display 0.24s allow-discrete;
 }
 
 .dialog[open]::backdrop {
   background: rgba(28, 28, 28, 0.45);
+  transition: background 0.36s ease;
 }
 
 @starting-style {
@@ -989,7 +996,9 @@ input {
 
 @media (prefers-reduced-motion: reduce) {
   .dialog,
-  .dialog::backdrop {
+  .dialog[open],
+  .dialog::backdrop,
+  .dialog[open]::backdrop {
     transition-duration: 1ms;
   }
 }
