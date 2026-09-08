@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Room } from '../types'
 import { fmtTime, relative, statusOf } from '../status'
 import { distanceLabel, locationLabel, getRoomFloor } from '../room'
@@ -20,28 +20,45 @@ const STATUS_TITLE: Record<string, string> = {
   unknown: 'No recent data',
 }
 
+/** Long enough to cover the slide even if transitionend never lands. */
+const SLIDE_MS = 380
+
 export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
-  // The last room stays on screen through the slide-down, after `room` is already null.
+  // The last room stays mounted through the slide-out, after `room` is already null.
   const [shown, setShown] = useState<Room | null>(room)
+  // Drives the `.is-open` class. Toggled a frame after showModal so the slide has
+  // a starting position to animate from, and cleared first thing on close.
+  const [slidIn, setSlidIn] = useState(false)
+
+  const finishClose = useCallback(() => {
+    const dialog = ref.current
+    if (dialog?.open) dialog.close()
+    setShown(null)
+  }, [])
 
   useEffect(() => {
     const dialog = ref.current
     if (!dialog) return
+
     if (room) {
       setShown(room)
       if (!dialog.open) dialog.showModal()
-    } else if (dialog.open) {
-      dialog.close()
+      // Flip the class after the browser has painted the off-screen start state.
+      // rAF is the right beat when visible; the timer covers a backgrounded tab
+      // where rAF is parked.
+      const raf = requestAnimationFrame(() => setSlidIn(true))
+      const timer = setTimeout(() => setSlidIn(true), 90)
+      return () => {
+        cancelAnimationFrame(raf)
+        clearTimeout(timer)
+      }
     }
-  }, [room])
 
-  // Drop the content once the sheet has finished sliding out.
-  useEffect(() => {
-    if (room) return
-    const t = setTimeout(() => setShown(null), 400)
+    setSlidIn(false)
+    const t = setTimeout(finishClose, SLIDE_MS)
     return () => clearTimeout(t)
-  }, [room])
+  }, [room, finishClose])
 
   const view = shown
   const status = view ? statusOf(view, now) : null
@@ -53,11 +70,14 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props)
   return (
     <dialog
       ref={ref}
-      className="dialog"
-      onClose={onClose}
+      className={slidIn ? 'dialog is-open' : 'dialog'}
+      onCancel={(e) => {
+        e.preventDefault()
+        onClose()
+      }}
       onTransitionEnd={(e) => {
         if (e.target === ref.current && e.propertyName === 'translate' && !room) {
-          setShown(null)
+          finishClose()
         }
       }}
       onClick={(e) => {

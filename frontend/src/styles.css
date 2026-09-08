@@ -937,7 +937,13 @@ input {
 
 /* Dialog */
 
-/* Bottom sheet: docked to the bottom edge, slides up on open and down on close. */
+/*
+ * Bottom sheet. It sits pinned to the bottom edge and starts pushed fully below
+ * it (translate 100%). RoomDialog adds `.is-open` one frame after showModal, so
+ * the sheet slides up; it drops the class before dialog.close(), so it slides
+ * back down. The class toggle, not the [open] state, drives the motion, which
+ * keeps it working without @starting-style.
+ */
 .dialog {
   position: fixed;
   inset: auto 0 0 0;
@@ -953,52 +959,26 @@ input {
   color: var(--charcoal);
   overflow: hidden;
   translate: 0 100%;
-  /* Exit: quick ease-in slide down. */
-  transition:
-    translate 0.24s ease-in,
-    overlay 0.24s allow-discrete,
-    display 0.24s allow-discrete;
+  transition: translate 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: translate;
 }
 
-.dialog[open] {
+.dialog.is-open {
   translate: 0 0;
-  /* Enter: slightly longer, with an overshoot-free settle. */
-  transition:
-    translate 0.36s cubic-bezier(0.32, 0.72, 0, 1),
-    overlay 0.36s allow-discrete,
-    display 0.36s allow-discrete;
-}
-
-@starting-style {
-  .dialog[open] {
-    translate: 0 100%;
-  }
 }
 
 .dialog::backdrop {
   background: rgba(28, 28, 28, 0);
-  transition:
-    background 0.24s ease,
-    overlay 0.24s allow-discrete,
-    display 0.24s allow-discrete;
+  transition: background 0.34s ease;
 }
 
-.dialog[open]::backdrop {
+.dialog.is-open::backdrop {
   background: rgba(28, 28, 28, 0.45);
-  transition: background 0.36s ease;
-}
-
-@starting-style {
-  .dialog[open]::backdrop {
-    background: rgba(28, 28, 28, 0);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dialog,
-  .dialog[open],
-  .dialog::backdrop,
-  .dialog[open]::backdrop {
+  .dialog::backdrop {
     transition-duration: 1ms;
   }
 }
