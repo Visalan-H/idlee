@@ -1,18 +1,18 @@
-import { settledFacts } from '../facts'
+import { factChips } from '../facts'
 import type { Facts } from '../types'
 
 /** Read-only consensus, for places too tight for the voting buttons. */
 export function FactChips({ facts, limit }: { facts: Facts | undefined; limit?: number }) {
-  const settled = settledFacts(facts)
-  if (!settled.length) return null
+  const chips = factChips(facts)
+  if (!chips.length) return null
 
-  const shown = limit ? settled.slice(0, limit) : settled
+  const shown = limit ? chips.slice(0, limit) : chips
 
   return (
     <div className="fact-chips">
-      {shown.map(({ attribute, option }) => (
-        <span key={attribute.key} className="fact-chip" data-warn={option.warn || undefined}>
-          {option.short}
+      {shown.map((chip) => (
+        <span key={chip.key} className="fact-chip" data-warn={chip.warn || undefined}>
+          {chip.text}
         </span>
       ))}
     </div>
