@@ -14,7 +14,8 @@ export interface Ranked {
 /**
  * A room outside the numbering scheme cannot be placed, so it sorts below every
  * room that can be. Larger than the worst real cost, which is roughly 124 steps
- * of walking plus 49 for a room that is locked, unpowered, dead and hot.
+ * of walking plus 50 for a room that is locked, unpowered, hot and with every
+ * carrier dead.
  */
 const UNPLACED = 999
 

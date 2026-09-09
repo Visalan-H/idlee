@@ -1,19 +1,3 @@
-/* Theme toggle view transition: a plain cut instead of the default cross-fade, so the
-   circular reveal animated from JS (clip-path on ::view-transition-new) is all you see. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-
-::view-transition-old(root) {
-  z-index: 1;
-}
-
-::view-transition-new(root) {
-  z-index: 2;
-}
-
 :root {
   --cream: #f7f4ed;
   --charcoal: #1c1c1c;
@@ -120,6 +104,17 @@ body {
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
+}
+
+/* Theme crossfade. A fixed overlay painted in the outgoing theme's background; JS swaps the theme
+   behind it, then fades it out so the new theme fades in. Animates opacity only, stays on the
+   compositor, smooth on phones. */
+.theme-veil {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483000;
+  will-change: opacity;
 }
 
 button,
@@ -937,21 +932,66 @@ input {
 
 /* Dialog */
 
+/*
+ * Bottom sheet. It sits pinned to the bottom edge and starts pushed fully below
+ * it (translate 100%). RoomDialog adds `.is-open` one frame after showModal, so
+ * the sheet slides up; it drops the class before dialog.close(), so it slides
+ * back down. The class toggle, not the [open] state, drives the motion, which
+ * keeps it working without @starting-style.
+ */
 .dialog {
-  width: min(460px, calc(100vw - 28px));
+  position: fixed;
+  inset: auto 0 0 0;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90dvh;
+  margin: 0 auto;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   background: var(--cream);
   color: var(--charcoal);
+  overflow: hidden;
+  translate: 0 100%;
+  transition: translate 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: translate;
+}
+
+.dialog.is-open {
+  translate: 0 0;
 }
 
 .dialog::backdrop {
+  background: rgba(28, 28, 28, 0);
+  transition: background 0.34s ease;
+}
+
+.dialog.is-open::backdrop {
   background: rgba(28, 28, 28, 0.45);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .dialog,
+  .dialog::backdrop {
+    transition-duration: 1ms;
+  }
+}
+
 .dialog-inner {
-  padding: 18px 20px 20px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  overscroll-behavior: contain;
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 10px;
+  border-radius: var(--radius-pill);
+  background: var(--charcoal);
+  opacity: 0.18;
 }
 
 .dialog-header {
@@ -1194,11 +1234,6 @@ input {
   color: var(--charcoal);
 }
 
-.fact-option:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
 .fact-option:focus-visible {
   outline: none;
   box-shadow: var(--focus-shadow);
@@ -1229,6 +1264,93 @@ input {
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   opacity: 0.7;
+}
+
+/* The four networks as one row of checkboxes-as-pills. Checked means the network
+   works in that room; unchecked-but-voted means you said it does not, which is a
+   real answer and reads differently from never having been asked. */
+.facts-hint {
+  margin: 0 0 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.carrier-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.carrier-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--offwhite);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.carrier-pill:hover:not(:disabled) {
+  background: var(--tint-4);
+  color: var(--charcoal);
+}
+
+.carrier-pill:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-shadow);
+}
+
+/* The box itself, so an unchecked pill still looks like something you can tick. */
+.carrier-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  color: var(--cream);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+/* What you said. Checked is filled, unchecked-but-voted keeps the neutral box. */
+.carrier-pill[data-checked] {
+  border-color: var(--charcoal);
+  background: var(--tint-8);
+  color: var(--charcoal);
+  font-weight: 600;
+}
+
+.carrier-pill[data-checked] .carrier-check {
+  background: var(--charcoal);
+  border-color: var(--charcoal);
+}
+
+.carrier-pill[data-said-no] {
+  border-color: var(--border-strong);
+  color: var(--charcoal);
+}
+
+/* What enough people agree on, whether or not you have voted. */
+.carrier-pill[data-lead='yes'] {
+  border-color: var(--border-strong);
+  color: var(--charcoal);
+}
+
+.carrier-pill[data-lead='no'] {
+  border-color: var(--soon);
+  background: var(--soon-tint);
+  color: var(--soon);
+}
+
+.carrier-pill[data-lead='no'] .carrier-check {
+  border-color: var(--soon);
 }
 
 .facts-error {

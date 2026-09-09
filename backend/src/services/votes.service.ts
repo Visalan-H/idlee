@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { pool } from '../config/db.js'
-import { VOTE_WINDOW_DAYS } from '../config/attributes.js'
+import { ATTRIBUTES, VOTE_WINDOW_DAYS } from '../config/attributes.js'
 
 /** attribute -> value -> how many people said it */
 export type Facts = Record<string, Record<string, number>>
@@ -29,8 +29,9 @@ export async function getFacts(): Promise<Map<string, Facts>> {
        from room_votes v
        join rooms r on r.id = v.room_id
       where v.created_at > now() - ($1 || ' days')::interval
+        and v.attribute = any($2)
       group by r.room_no, v.attribute, v.value`,
-    [VOTE_WINDOW_DAYS],
+    [VOTE_WINDOW_DAYS, Object.keys(ATTRIBUTES)],
   )
 
   const byRoom = new Map<string, Facts>()
@@ -68,4 +69,49 @@ export async function castVote(opts: {
   )
 
   return rowCount === 0 ? 'unknown-room' : 'ok'
+}
+
+/**
+ * Takes a vote back entirely, which is not the same as voting the other way.
+ * Deleting the row drops the voter out of the denominator, so a room nobody
+ * has an opinion on reads as unsettled again rather than as a tie.
+ *
+ * Clearing a vote that was never cast is a no-op, not an error: the browser's
+ * idea of what it said can lag the table after storage is cleared, and the
+ * caller only cares that the vote is gone afterwards.
+ */
+export async function clearVote(opts: {
+  room: string
+  attribute: string
+  voterId: string
+}): Promise<VoteResult> {
+  const voter = hash(opts.voterId)
+
+  const { rowCount } = await pool.query(
+    `select 1 from rooms where room_no = $1 and active`,
+    [opts.room],
+  )
+  if (rowCount === 0) return 'unknown-room'
+
+  await pool.query(
+    `delete from room_votes v
+      using rooms r
+      where r.id = v.room_id and r.room_no = $1 and v.attribute = $2 and v.voter = $3`,
+    [opts.room, opts.attribute, voter],
+  )
+
+  return 'ok'
+}
+
+/**
+ * Drops votes for attributes that no longer exist, `network` from before it was
+ * split per SIM carrier being the first of them. Driven off ATTRIBUTES rather
+ * than a hardcoded list, so retiring the next one needs no second edit here.
+ * Run by `npm run schema`; getFacts already ignores these rows either way.
+ */
+export async function purgeRetiredVotes(): Promise<number> {
+  const { rowCount } = await pool.query(`delete from room_votes where attribute <> all($1)`, [
+    Object.keys(ATTRIBUTES),
+  ])
+  return rowCount ?? 0
 }

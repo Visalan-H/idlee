@@ -32,7 +32,7 @@ Free now shows what you can walk into. All rooms shows the day for every room, f
 
 A room being unbooked doesn't make it usable. The door might be locked anyway. There might be no AC, no plug socket you can reach, no signal to tether from. The portal knows none of this and never will, because nobody writes it down.
 
-So the room card asks you. Four questions, one tap each. Is the door usually open or usually locked. AC or no AC. Plenty of charging ports, a few, or none. Signal strong, patchy, or dead.
+So the room card asks you. A tap each. Is the door usually open or usually locked. AC or no AC. Plenty of charging ports, a few, or none. And which SIM networks get a signal in there, Jio, Airtel, Vi, BSNL, since one room has all four and the next has none.
 
 No account, no name attached. Your browser holds a random id so you can change your answer later, and it's hashed before it's stored, so the table can't be read as a record of which rooms you've been sitting in.
 

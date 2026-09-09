@@ -23,3 +23,11 @@ export async function castVote(room: string, attribute: string, value: string, v
   })
   if (!res.ok) throw new Error("Couldn't save that vote.")
 }
+
+export async function clearVote(room: string, attribute: string, voterId: string) {
+  const res = await fetch(
+    `${BASE}/api/rooms/${encodeURIComponent(room)}/votes/${encodeURIComponent(attribute)}`,
+    { method: 'DELETE', headers: { 'x-voter-id': voterId } },
+  )
+  if (!res.ok) throw new Error("Couldn't remove that vote.")
+}

@@ -16,6 +16,20 @@ export interface AttributeDef {
   options: AttributeOption[]
 }
 
+
+/**
+ * The four SIM networks worth asking about. Each is its own yes/no attribute,
+ * because a room that has Jio but not BSNL is the normal case, not an edge one.
+ */
+export const CARRIERS = [
+  { key: 'jio', label: 'Jio' },
+  { key: 'airtel', label: 'Airtel' },
+  { key: 'vi', label: 'Vi' },
+  { key: 'bsnl', label: 'BSNL' },
+] as const
+
+const CARRIER_KEYS: string[] = CARRIERS.map((c) => c.key)
+
 /** Mirrors ATTRIBUTES in the backend. Keys and values must match or the vote is rejected. */
 export const ATTRIBUTES: AttributeDef[] = [
   {
@@ -43,16 +57,23 @@ export const ATTRIBUTES: AttributeDef[] = [
       { value: 'none', label: 'None', short: 'No ports', warn: true },
     ],
   },
-  {
-    key: 'network',
-    label: 'Phone signal',
-    options: [
-      { value: 'strong', label: 'Strong', short: 'Good signal' },
-      { value: 'patchy', label: 'Patchy', short: 'Patchy signal' },
-      { value: 'dead', label: 'Dead zone', short: 'No signal', warn: true },
-    ],
-  },
+  ...CARRIERS.map(
+    (c): AttributeDef => ({
+      key: c.key,
+      label: c.label,
+      options: [
+        { value: 'yes', label: 'Works', short: `${c.label} works` },
+        { value: 'no', label: 'No signal', short: `No ${c.label}`, warn: true },
+      ],
+    }),
+  ),
 ]
+
+/** The attributes that render as their own labelled row, carriers excluded. */
+export const PLAIN_ATTRIBUTES = ATTRIBUTES.filter((a) => !CARRIER_KEYS.includes(a.key))
+
+/** The carriers, in declaration order, for the single pill row they share. */
+export const CARRIER_ATTRIBUTES = ATTRIBUTES.filter((a) => CARRIER_KEYS.includes(a.key))
 
 /**
  * Below three votes one person decides the room, and a 50/50 split is not a
@@ -110,8 +131,13 @@ export function settledFacts(facts: Facts | undefined): Consensus[] {
 const COST: Record<string, Record<string, number>> = {
   door: { open: -2, locked: 40 },
   power: { many: -3, few: 0, none: 4 },
-  network: { strong: -2, patchy: 0, dead: 3 },
   ac: { ac: -2, no_ac: 2 },
+  // Per carrier: one working network barely moves the room, four dead ones cost
+  // as much as having no charging ports.
+  jio: { yes: -0.5, no: 1 },
+  airtel: { yes: -0.5, no: 1 },
+  vi: { yes: -0.5, no: 1 },
+  bsnl: { yes: -0.5, no: 1 },
 }
 
 /** Only settled facts count. An attribute nobody has agreed on is worth nothing either way. */
@@ -124,4 +150,44 @@ export function factCost(facts: Facts | undefined): number {
 
 export function isLocked(facts: Facts | undefined): boolean {
   return settledFacts(facts).some((c) => c.attribute.key === 'door' && c.option.value === 'locked')
+}
+
+export interface FactChip {
+  key: string
+  text: string
+  warn?: boolean
+}
+
+const CARRIER_ATTR = new Map(ATTRIBUTES.filter((a) => CARRIER_KEYS.includes(a.key)).map((a) => [a.key, a]))
+
+/**
+ * The carriers collapsed to a single chip: the networks the crowd agrees work,
+ * or a dead-zone warning when every settled carrier is out. Null until at least
+ * one carrier has settled.
+ */
+export function carrierChip(facts: Facts | undefined): FactChip | null {
+  const working: string[] = []
+  let deadSettled = 0
+  for (const c of CARRIERS) {
+    const agreed = consensusOf(facts, CARRIER_ATTR.get(c.key)!)
+    if (!agreed) continue
+    if (agreed.option.value === 'yes') working.push(c.label)
+    else deadSettled += 1
+  }
+  if (working.length === CARRIERS.length) return { key: 'carrier', text: 'All carriers' }
+  if (working.length) return { key: 'carrier', text: working.join(', ') }
+  if (deadSettled) return { key: 'carrier', text: 'No signal', warn: true }
+  return null
+}
+
+/**
+ * Read-only summary chips. The carrier chip leads, because the compact lists slice
+ * this to the first two and signal is the fact people scan for.
+ */
+export function factChips(facts: Facts | undefined): FactChip[] {
+  const chips: FactChip[] = settledFacts(facts)
+    .filter((c) => !CARRIER_KEYS.includes(c.attribute.key))
+    .map((c) => ({ key: c.attribute.key, text: c.option.short, warn: c.option.warn }))
+  const carrier = carrierChip(facts)
+  return carrier ? [carrier, ...chips] : chips
 }
