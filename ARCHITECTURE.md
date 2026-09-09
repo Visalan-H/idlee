@@ -296,9 +296,12 @@ locked is not a room you can use, and printing "usually locked" under a room the
 app has just put at the top is telling the student to do the sorting themselves.
 
 `door: locked` costs 40, more than three floors. Everything else is small on
-purpose: air conditioning is worth 2 steps, charging ports 3 or 4, signal 2 or
-3. A perfect room saves 9 steps, which is less than one floor, so the ranking
-never sends anyone upstairs past a free room for the sake of a plug socket.
+purpose: air conditioning is worth 2 steps, charging ports 3 or 4. Each SIM
+network is half a step when it works and one when it is dead, so a room with all
+four carriers out costs 4, the same as no charging ports, and a single working
+carrier barely registers. A perfect room saves 9 steps, which is less than one
+floor, so the ranking never sends anyone upstairs past a free room for the sake
+of a plug socket.
 
 ### The scale is signed, because penalties alone reward silence
 

@@ -8,7 +8,10 @@
 export const ATTRIBUTES = {
   ac: ['ac', 'no_ac'],
   power: ['many', 'few', 'none'],
-  network: ['strong', 'patchy', 'dead'],
+  jio: ['yes', 'no'],
+  airtel: ['yes', 'no'],
+  vi: ['yes', 'no'],
+  bsnl: ['yes', 'no'],
   door: ['open', 'locked'],
 } as const
 

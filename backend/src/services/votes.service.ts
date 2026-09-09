@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { pool } from '../config/db.js'
-import { VOTE_WINDOW_DAYS } from '../config/attributes.js'
+import { ATTRIBUTES, VOTE_WINDOW_DAYS } from '../config/attributes.js'
 
 /** attribute -> value -> how many people said it */
 export type Facts = Record<string, Record<string, number>>
@@ -29,8 +29,9 @@ export async function getFacts(): Promise<Map<string, Facts>> {
        from room_votes v
        join rooms r on r.id = v.room_id
       where v.created_at > now() - ($1 || ' days')::interval
+        and v.attribute = any($2)
       group by r.room_no, v.attribute, v.value`,
-    [VOTE_WINDOW_DAYS],
+    [VOTE_WINDOW_DAYS, Object.keys(ATTRIBUTES)],
   )
 
   const byRoom = new Map<string, Facts>()
@@ -68,4 +69,17 @@ export async function castVote(opts: {
   )
 
   return rowCount === 0 ? 'unknown-room' : 'ok'
+}
+
+/**
+ * Drops votes for attributes that no longer exist, `network` from before it was
+ * split per SIM carrier being the first of them. Driven off ATTRIBUTES rather
+ * than a hardcoded list, so retiring the next one needs no second edit here.
+ * Run by `npm run schema`; getFacts already ignores these rows either way.
+ */
+export async function purgeRetiredVotes(): Promise<number> {
+  const { rowCount } = await pool.query(`delete from room_votes where attribute <> all($1)`, [
+    Object.keys(ATTRIBUTES),
+  ])
+  return rowCount ?? 0
 }
