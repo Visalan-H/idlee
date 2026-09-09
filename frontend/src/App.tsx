@@ -164,10 +164,7 @@ export default function App() {
             type="button"
             className="theme-toggle"
             data-busy={switching || undefined}
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect()
-              toggleTheme({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
-            }}
+            onClick={() => toggleTheme()}
             aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? <SunIcon width={18} height={18} /> : <MoonIcon width={18} height={18} />}
