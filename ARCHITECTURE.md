@@ -376,8 +376,14 @@ frontend is a separate project rather than served by the backend.
 ### Two projects, one repo
 
 `idlee-api` builds from `backend`, `idlee` builds from `frontend`, both from the
-same GitHub repo. They are separate origins, which is why the backend needs CORS
-and why `FRONTEND_URL` exists.
+same GitHub repo. They serve `idlee-api.visalan.me` and `idlee.visalan.me`. They
+are separate origins, which is why the backend needs CORS and why `FRONTEND_URL`
+exists.
+
+The domains are in three places that must agree: `FRONTEND_URL` on the API project,
+`VITE_API_URL` on the frontend project, and the absolute `og:` and `twitter:` URLs in
+`index.html`. The meta tags are the ones that fail quietly, since a stale image URL
+still renders a card, just the wrong one.
 
 Each project's ignored build step is `git diff --quiet HEAD^ HEAD .`, run from
 its own root directory. Exit 0 means nothing there changed and Vercel skips the
