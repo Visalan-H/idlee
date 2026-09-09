@@ -69,6 +69,12 @@ export const ATTRIBUTES: AttributeDef[] = [
   ),
 ]
 
+/** The attributes that render as their own labelled row, carriers excluded. */
+export const PLAIN_ATTRIBUTES = ATTRIBUTES.filter((a) => !CARRIER_KEYS.includes(a.key))
+
+/** The carriers, in declaration order, for the single pill row they share. */
+export const CARRIER_ATTRIBUTES = ATTRIBUTES.filter((a) => CARRIER_KEYS.includes(a.key))
+
 /**
  * Below three votes one person decides the room, and a 50/50 split is not a
  * fact. Anything short of both bars shows as unsettled rather than guessing.
