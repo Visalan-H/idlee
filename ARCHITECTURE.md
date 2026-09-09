@@ -4,12 +4,12 @@ Why this app is shaped the way it is. Each section states the constraint first,
 because most of these decisions are forced rather than chosen.
 
 ```
-cron-job.org  â”€â”€POST /api/refreshâ”€â”€>  backend  â”€â”€fetchâ”€â”€>  learner.saveetha.in
-                                         â”‚
-                                         â–¼
+cron-job.org  --POST /api/refresh-->  backend  --fetch-->  learner.saveetha.in
+                                         |
+                                         v
                                      Postgres
-                                         â–²
- frontend  â”€â”€GET /api/roomsâ”€â”€>  backend â”€â”˜
+                                         ^
+ frontend  --GET /api/rooms-->  backend --+
 ```
 
 ## The source and its three limits
