@@ -1,0 +1,9 @@
+# The repo is LF in git. Checkouts on the NTFS mount were coming back CRLF and
+# turning every commit into a whole-file rewrite; this pins normalisation on.
+* text=auto eol=lf
+
+# Lockfiles and images are left exactly as npm and the tools wrote them.
+*.png binary
+*.jpg binary
+*.ico binary
+*.webp binary
