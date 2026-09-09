@@ -41,6 +41,46 @@ export default function App() {
     }
   }, [])
 
+  /**
+   * Folds a vote straight into the cached tally, so counts and consensus move on tap
+   * instead of waiting for the next load. The payload is 100 rooms of schedule for a
+   * change of one integer, and the delta is known exactly, so refetching to learn it
+   * would be the slow way to find out something we already know.
+   *
+   * `prev` and `next` are the voter's own old and new answers, either of which may be
+   * null: casting a first vote, or withdrawing one.
+   */
+  const applyVote = useCallback(
+    (roomNo: string, attribute: string, prev: string | null, next: string | null) => {
+      setData((current) => {
+        if (!current) return current
+        return {
+          ...current,
+          rooms: current.rooms.map((room) => {
+            if (room.room !== roomNo) return room
+
+            const facts = { ...(room.facts ?? {}) }
+            const tally = { ...(facts[attribute] ?? {}) }
+            if (prev) tally[prev] = Math.max(0, (tally[prev] ?? 0) - 1)
+            if (next) tally[next] = (tally[next] ?? 0) + 1
+
+            // A zero is the absence of an answer, not an answer of zero; leaving them in
+            // would keep empty attributes in the payload shape the server never sends.
+            for (const [value, count] of Object.entries(tally)) {
+              if (count <= 0) delete tally[value]
+            }
+
+            if (Object.keys(tally).length) facts[attribute] = tally
+            else delete facts[attribute]
+
+            return { ...room, facts }
+          }),
+        }
+      })
+    },
+    [],
+  )
+
   /** Back to how the app looks on a fresh visit: no search, no chosen room, Free now tab. */
   const reset = useCallback(() => {
     setQuery('')
@@ -61,6 +101,13 @@ export default function App() {
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [load])
+
+  // `selected` is the room as it was when tapped. The sheet needs the live one, or a
+  // vote cast inside it would not show until the dialog was reopened.
+  const openRoom = useMemo(
+    () => (selected ? (data?.rooms.find((r) => r.room === selected.room) ?? selected) : null),
+    [selected, data],
+  )
 
   const ranked = useMemo(() => rankRooms(data?.rooms ?? [], now, myRoom), [data, now, myRoom])
   const freeRooms = useMemo(() => nearYouList(ranked), [ranked])
@@ -246,11 +293,12 @@ export default function App() {
       )}
 
       <RoomDialog
-        room={selected}
+        room={openRoom}
         now={now}
         myRoom={myRoom}
         onClose={() => setSelected(null)}
         onSetLocation={setMyRoom}
+        onVoted={applyVote}
       />
     </div>
   )

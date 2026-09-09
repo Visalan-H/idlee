@@ -1239,11 +1239,6 @@ input {
   color: var(--charcoal);
 }
 
-.fact-option:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-
 .fact-option:focus-visible {
   outline: none;
   box-shadow: var(--focus-shadow);
@@ -1309,11 +1304,6 @@ input {
 .carrier-pill:hover:not(:disabled) {
   background: var(--tint-4);
   color: var(--charcoal);
-}
-
-.carrier-pill:disabled {
-  cursor: default;
-  opacity: 0.6;
 }
 
 .carrier-pill:focus-visible {

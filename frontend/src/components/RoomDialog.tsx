@@ -11,6 +11,7 @@ interface Props {
   myRoom?: string | null
   onClose: () => void
   onSetLocation?: (room: string) => void
+  onVoted?: (room: string, attribute: string, prev: string | null, next: string | null) => void
 }
 
 const STATUS_TITLE: Record<string, string> = {
@@ -23,7 +24,7 @@ const STATUS_TITLE: Record<string, string> = {
 /** Long enough to cover the slide even if transitionend never lands. */
 const SLIDE_MS = 380
 
-export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props) {
+export function RoomDialog({ room, now, myRoom, onClose, onSetLocation, onVoted }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   // The last room stays mounted through the slide-out, after `room` is already null.
   const [shown, setShown] = useState<Room | null>(room)
@@ -157,7 +158,7 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation }: Props)
             )}
           </div>
 
-          <RoomFacts room={view} />
+          <RoomFacts room={view} onVoted={onVoted} />
 
           {view.fetchedAt && (
             <div className="dialog-footer">Checked {relative(view.fetchedAt, now)}</div>
