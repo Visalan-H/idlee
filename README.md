@@ -2,7 +2,7 @@
 
 Find a classroom that's actually free, without walking the corridor and trying door handles.
 
-Try here: https://idlee.vercel.app
+Try here: https://idlee.visalan.me
 
 ## The hour you lose
 
