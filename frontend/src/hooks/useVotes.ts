@@ -51,10 +51,24 @@ export function useMyVotes() {
     })
   }, [])
 
+  /** Drops the local record too, so the row goes back to looking unanswered. */
+  const forget = useCallback((room: string, attribute: string) => {
+    setVotes((prev) => {
+      const next = { ...prev }
+      delete next[slot(room, attribute)]
+      try {
+        localStorage.setItem(VOTES_KEY, JSON.stringify(next))
+      } catch {
+        // Session-only is fine.
+      }
+      return next
+    })
+  }, [])
+
   const myVote = useCallback(
     (room: string, attribute: string) => votes[slot(room, attribute)] ?? null,
     [votes],
   )
 
-  return { myVote, remember }
+  return { myVote, remember, forget }
 }

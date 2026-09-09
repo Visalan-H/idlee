@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { castVote } from '../api'
+import { castVote, clearVote } from '../api'
 import { CARRIER_ATTRIBUTES, PLAIN_ATTRIBUTES, consensusOf } from '../facts'
 import { CheckIcon } from '../icons'
 import { useMyVotes, voterId } from '../hooks/useVotes'
@@ -12,16 +12,26 @@ import type { Room } from '../types'
  * people who have been in.
  */
 export function RoomFacts({ room }: { room: Room }) {
-  const { myVote, remember } = useMyVotes()
+  const { myVote, remember, forget } = useMyVotes()
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState<string | null>(null)
 
-  async function vote(attribute: string, value: string) {
-    setPending(`${attribute}:${value}`)
+  /**
+   * A null value takes the vote back rather than answering the other way. The two
+   * are different: voting no keeps you in the denominator, withdrawing does not,
+   * so a room nobody has an opinion on can go back to reading as unsettled.
+   */
+  async function submit(attribute: string, value: string | null) {
+    setPending(`${attribute}:${value ?? 'clear'}`)
     setError(null)
     try {
-      await castVote(room.room, attribute, value, voterId())
-      remember(room.room, attribute, value)
+      if (value === null) {
+        await clearVote(room.room, attribute, voterId())
+        forget(room.room, attribute)
+      } else {
+        await castVote(room.room, attribute, value, voterId())
+        remember(room.room, attribute, value)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Vote failed.')
     } finally {
@@ -32,7 +42,7 @@ export function RoomFacts({ room }: { room: Room }) {
   return (
     <div className="facts">
       <h3 className="schedule-heading">Room facts</h3>
-      <p className="facts-note">Voted by whoever has been in. Tap what you saw.</p>
+      <p className="facts-note">Voted by whoever has been in. Tap what you saw, tap again to undo.</p>
 
       <div className="facts-list">
         {PLAIN_ATTRIBUTES.map((attribute) => {
@@ -54,17 +64,19 @@ export function RoomFacts({ room }: { room: Room }) {
               <div className="fact-options">
                 {attribute.options.map((option) => {
                   const count = tally[option.value] ?? 0
+                  const picked = mine === option.value
                   return (
                     <button
                       key={option.value}
                       type="button"
                       className="fact-option"
-                      data-mine={mine === option.value || undefined}
+                      data-mine={picked || undefined}
                       data-lead={agreed?.option.value === option.value || undefined}
                       data-warn={option.warn || undefined}
                       disabled={pending !== null}
-                      aria-pressed={mine === option.value}
-                      onClick={() => vote(attribute.key, option.value)}
+                      aria-pressed={picked}
+                      // Tapping what you already picked withdraws it.
+                      onClick={() => submit(attribute.key, picked ? null : option.value)}
                     >
                       {option.label}
                       {count > 0 && <span className="fact-option-count">{count}</span>}
@@ -77,12 +89,15 @@ export function RoomFacts({ room }: { room: Room }) {
         })}
 
         {/* One pill per network instead of four near-identical yes/no rows. Checked
-            means it works in there; tapping a checked pill takes the vote back to no. */}
+            means it works in there. Tapping cycles through the three real answers:
+            nothing said, works, does not work, and back to nothing said. */}
         <div className="fact-row">
           <div className="fact-label">
             <span>Phone signal</span>
           </div>
-          <p className="facts-hint">Check the networks that get a signal in here.</p>
+          <p className="facts-hint">
+            Check the networks that get a signal. Tap twice if there is none, three times to undo.
+          </p>
 
           <div className="carrier-pills">
             {CARRIER_ATTRIBUTES.map((attribute) => {
@@ -92,6 +107,7 @@ export function RoomFacts({ room }: { room: Room }) {
               const yes = tally.yes ?? 0
               const total = yes + (tally.no ?? 0)
               const checked = mine === 'yes'
+              const next = mine === null ? 'yes' : mine === 'yes' ? 'no' : null
 
               return (
                 <button
@@ -104,7 +120,7 @@ export function RoomFacts({ room }: { room: Room }) {
                   disabled={pending !== null}
                   aria-pressed={checked}
                   aria-label={`${attribute.label} works in this room`}
-                  onClick={() => vote(attribute.key, checked ? 'no' : 'yes')}
+                  onClick={() => submit(attribute.key, next)}
                 >
                   <span className="carrier-check" aria-hidden="true">
                     {checked && <CheckIcon width={11} height={11} />}

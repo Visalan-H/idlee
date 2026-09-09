@@ -72,6 +72,38 @@ export async function castVote(opts: {
 }
 
 /**
+ * Takes a vote back entirely, which is not the same as voting the other way.
+ * Deleting the row drops the voter out of the denominator, so a room nobody
+ * has an opinion on reads as unsettled again rather than as a tie.
+ *
+ * Clearing a vote that was never cast is a no-op, not an error: the browser's
+ * idea of what it said can lag the table after storage is cleared, and the
+ * caller only cares that the vote is gone afterwards.
+ */
+export async function clearVote(opts: {
+  room: string
+  attribute: string
+  voterId: string
+}): Promise<VoteResult> {
+  const voter = hash(opts.voterId)
+
+  const { rowCount } = await pool.query(
+    `select 1 from rooms where room_no = $1 and active`,
+    [opts.room],
+  )
+  if (rowCount === 0) return 'unknown-room'
+
+  await pool.query(
+    `delete from room_votes v
+      using rooms r
+      where r.id = v.room_id and r.room_no = $1 and v.attribute = $2 and v.voter = $3`,
+    [opts.room, opts.attribute, voter],
+  )
+
+  return 'ok'
+}
+
+/**
  * Drops votes for attributes that no longer exist, `network` from before it was
  * split per SIM carrier being the first of them. Driven off ATTRIBUTES rather
  * than a hardcoded list, so retiring the next one needs no second edit here.
