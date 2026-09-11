@@ -15,8 +15,14 @@ const MONTHS: Record<string, string> = {
 const META =
   /^(\d{2})\s+([A-Za-z]{3})\s+(\d{4})\s*\|\s*.*?\s*\|\s*(\d{2}:\d{2}:\d{2})\s*-\s*(\d{2}:\d{2}:\d{2})$/
 
-export function parse(html: string) {
+export interface ScrapedRoom {
+  label: string | null
+  sessions: ScrapedSession[]
+}
+
+export function parse(html: string): ScrapedRoom {
   const $ = cheerio.load(html)
+  const label = $('h1.h3.mb-1').first().text().trim() || null
   const sessions: ScrapedSession[] = []
 
   $('.session-card').each((_, el) => {
@@ -42,10 +48,10 @@ export function parse(html: string) {
     })
   })
 
-  return sessions
+  return { label, sessions }
 }
 
-async function fetchSessions(url: string) {
+async function fetchRoom(url: string) {
   const res = await fetch(url, {
     headers: { 'User-Agent': 'idlee/1.0', Accept: 'text/html' },
     signal: AbortSignal.timeout(15_000),
@@ -58,9 +64,9 @@ export async function scrapeRoom(locationId: number, token: string) {
   const url = `https://learner.saveetha.in/general/locations/${locationId}/${token}/?scope=future`
 
   try {
-    return await fetchSessions(url)
+    return await fetchRoom(url)
   } catch {
     await new Promise((r) => setTimeout(r, 2500))
-    return fetchSessions(url)
+    return fetchRoom(url)
   }
 }
