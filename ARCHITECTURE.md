@@ -76,6 +76,20 @@ duplicates, and the whole thing runs in one transaction per room.
 `?scope=past` exists on the portal and the app never calls it. Doubling the
 request count to reconstruct history nobody asked for is not worth it.
 
+### The page must name the room it claims to be
+
+A `rooms` row pairs a `room_no` with the `location_id` and token that build its
+URL. Nothing guarantees the two agree. If a row is filed under the wrong number,
+every refresh fetches the real room behind that token and writes its timetable
+under the wrong name, and the code never notices.
+
+This happened. A row called `CLS03` actually held location 89, which is room
+3653, so 3653's schedule kept landing under `CLS03`. So the scraper now reads the
+room out of the page's own `<h1>` and `refreshRoom` checks it starts with the
+`room_no` it holds. On a mismatch it throws before any write, and the run counts
+that room as failed instead of corrupting it. A missing heading, meaning the
+markup changed, passes through rather than blocking every room at once.
+
 ### Concurrency of six
 
 Twelve workers with two scopes put 24 requests in flight and the portal answered

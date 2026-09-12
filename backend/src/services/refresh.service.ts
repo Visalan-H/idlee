@@ -11,9 +11,26 @@ interface RoomRow {
   token: string
 }
 
+// The page prints its own room in an <h1>, e.g. "3653" or "0453-...Lab". A row
+// passes only when that heading starts with the room_no we hold for it.
+function labelMatches(label: string, roomNo: string) {
+  if (!label.startsWith(roomNo)) return false
+  const rest = label.slice(roomNo.length)
+  return rest === '' || /^[^A-Za-z0-9]/.test(rest)
+}
+
 async function refreshRoom(room: RoomRow, now: Date) {
-  const scraped = await scrapeRoom(room.location_id, room.token)
-  const upcoming = scraped.filter((s) => new Date(s.startsAt) > now)
+  const { label, sessions } = await scrapeRoom(room.location_id, room.token)
+
+  // If the page names a different room, this row's token points elsewhere and
+  // writing its sessions here would file another room's timetable under this
+  // one. Skip instead of corrupting. A missing label (markup changed) can't be
+  // checked, so it passes through rather than blocking every refresh.
+  if (label && !labelMatches(label, room.room_no)) {
+    throw new Error(`identity mismatch: page shows "${label}", expected ${room.room_no}`)
+  }
+
+  const upcoming = sessions.filter((s) => new Date(s.startsAt) > now)
   const client = await pool.connect()
 
   try {
