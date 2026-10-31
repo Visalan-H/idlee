@@ -21,8 +21,9 @@ list follows that order first.
 On each floor, rooms free for the rest of the day come first, then rooms that
 stay free past the end of the next class, then shorter ones. The app guesses
 when the next class ends from the timetable, so at 9:30 it looks for rooms free
-until 11:15. Walking distance and votes decide within each group. A room with
-under half an hour left drops to the bottom of the whole list.
+until 11:15. Walking distance and votes decide within the first two groups,
+and the shorter ones go longest first. A room with under half an hour left drops
+to the bottom of the whole list.
 
 Tap any room for its full day, class by class, with the current one marked.
 Search understands floors, so `3` gives you the third floor rather than every

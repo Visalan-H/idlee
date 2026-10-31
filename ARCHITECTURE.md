@@ -61,7 +61,7 @@ or a slot can fall between two ticks and be missed.
 The cost is honesty about staleness. A class moved at 11:05 is wrong until the
 next boundary. The header carries the last refresh time rather than pretending
 the data is live. A banner used to warn once data passed three hours old, but
-scrapes stop at 15:00, so it showed every evening and weekend and taught people
+scrapes stop at 14:45, so it showed every evening and weekend and taught people
 to ignore it.
 
 ### Deleting only the future
@@ -349,7 +349,8 @@ A locked door already sends a room to the end of its floor, so its +40 only
 orders locked rooms among themselves. Everything else is small on purpose: air conditioning is worth 2 steps, charging ports 3 or 4. Each SIM
 network is half a step when it works and one when it is dead, so a room with all
 four carriers out costs 4, the same as no charging ports, and a single working
-carrier barely registers. A perfect room saves 9 steps, which is less than one
+carrier barely registers. A perfect room saves 11 steps over an unvoted one,
+which is less than one
 floor, so the ranking never sends anyone upstairs past a free room for the sake
 of a plug socket.
 
