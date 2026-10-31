@@ -59,8 +59,10 @@ so the scrape fires once. Keep the window at least as wide as the cron interval
 or a slot can fall between two ticks and be missed.
 
 The cost is honesty about staleness. A class moved at 11:05 is wrong until the
-next boundary. The UI carries the last refresh time and a banner appears when a
-run goes missing, rather than pretending the data is live.
+next boundary. The header carries the last refresh time rather than pretending
+the data is live. A banner used to warn once data passed three hours old, but
+scrapes stop at 14:45, so it showed every evening and weekend and taught people
+to ignore it.
 
 ### Deleting only the future
 
@@ -161,8 +163,8 @@ side should be off, because a timeout is no longer a signal.
 
 The trade is that the response cannot report what happened. Every run writes to
 `refresh_runs` instead, and the app reads the newest row for its "updated" time.
-Real failures surface in the UI through `staleRooms` and the stale banner, not
-through the cron dashboard.
+Real failures show up as an old "updated" time in the header and in
+`staleRooms` on the payload, not through the cron dashboard.
 
 ### ran_at is when the run started
 
@@ -298,9 +300,43 @@ Rooms outside the scheme, like `CLS03`, return null from every function in
 `room.ts`, and every caller handles null. An unparseable room still appears, it
 just cannot be ranked by distance.
 
-### Ranking is one number, and that number is steps
+### The free list sorts in layers
 
-Every free room gets a `cost`, and the lowest wins. Cost is walking distance
+A free room that ends before your class does is no use, however close it is. So
+`nearYouList` sorts in layers, and walking distance only decides inside the
+last one.
+
+1. Rooms with under 30 minutes left drop below everything, longest first.
+   Without this, a first-choice floor holding only a 3-minute room would lead.
+2. The rest group by the floors the student tapped, in tap order. Untapped
+   floors come after, all equal.
+3. Within a floor, a room people call locked goes to the end. It stays above the
+   next floor, because a vote can be wrong and the floor is the student's choice.
+4. The open rooms on a floor split into three bands. Rooms free from now on come
+   first, whether they had no class today or their last one is over. Rooms free
+   past the end of the next class slot come next, then rooms taken before it,
+   longest first.
+5. Inside the first two bands, `cost` decides.
+
+Floor order beats free time on purpose. A student who taps floor 4 wants floor
+4, and would rather sit there until 1:15 than climb to an all-day room on 2.
+
+### The stay is guessed, not asked
+
+"Free past the next class" needs to know when that class ends. Sessions across
+the building end together at slot boundaries, so `inferStay` counts how many
+rooms end a session at each time and treats any time shared by three or more as
+a boundary. The stay runs to the first boundary at least 45 minutes away, capped
+at 150 minutes. At 9:30 that is the 11:15 end of the 9:45 slot. At 11:10 the
+11:15 boundary is too close to matter, so the stay moves on to the next slot.
+
+The guess stays off screen. An earlier version printed "best for a 1h 45m stay"
+above the list, but every row already says "free until 11:30", and the order
+makes the point without the sentence.
+
+### Inside a band, ranking is one number of steps
+
+Inside a band every free room gets a `cost`, and the lowest wins. Cost is walking distance
 plus what the room's settled votes are worth, both in grid steps, where a floor
 is 12. Ties break on whichever room stays free longest, then on room number so
 the order is stable.
@@ -309,11 +345,12 @@ Votes belong in the ranking rather than beside it. A room that is free and
 locked is not a room you can use, and printing "usually locked" under a room the
 app has just put at the top is telling the student to do the sorting themselves.
 
-`door: locked` costs 40, more than three floors. Everything else is small on
-purpose: air conditioning is worth 2 steps, charging ports 3 or 4. Each SIM
+A locked door already sends a room to the end of its floor, so its +40 only
+orders locked rooms among themselves. Everything else is small on purpose: air conditioning is worth 2 steps, charging ports 3 or 4. Each SIM
 network is half a step when it works and one when it is dead, so a room with all
 four carriers out costs 4, the same as no charging ports, and a single working
-carrier barely registers. A perfect room saves 9 steps, which is less than one
+carrier barely registers. A perfect room saves 11 steps over an unvoted one,
+which is less than one
 floor, so the ranking never sends anyone upstairs past a free room for the sake
 of a plug socket.
 
@@ -324,9 +361,12 @@ bad one hurt. That quietly promotes every room nobody has been in, which is
 exactly backwards when 190 of 290 rooms are unmapped: saying nothing about a
 room would have made it look ideal.
 
-So a room with no votes sits at zero, in the middle, and settled votes move it
-either way. `open`, `ac`, `many`, `strong` are negative. Their opposites are
-positive.
+So a room with no votes sits near zero, in the middle, and settled votes move it
+either way. `open`, `ac`, `many` and a working carrier are negative. Their
+opposites are positive.
+
+AC is the exception. Most rooms lack it, so `factCost` treats a room nobody has
+voted on as having none, and only an `ac` vote lifts it above the rest.
 
 The one place the scale stays lopsided is the door. `locked` is +40 while `open`
 is only -2, because a door being open is what you already assumed and a locked
@@ -360,7 +400,7 @@ substring anywhere. So `3` means the third floor, and `ground` works too.
 
 ### State lives in three places
 
-The chosen room in localStorage, the query and tab in React state, everything
+The chosen room and floor order in localStorage, the query and tab in React state, everything
 else computed on render. No store, no context, no cache layer. The whole app is
 one fetch and a few `useMemo` calls, and adding a state library to it would be
 ceremony.

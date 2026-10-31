@@ -15,8 +15,15 @@ for every room whether it is free or not.
 
 Tell it which room you are in and the order changes to match. Room numbers work
 as coordinates: `3654` is floor 3, row 6, column 5, so `3652` is two doors down
-and `2654` is one floor below. Rooms sort by walking distance first, then by
-which one holds out longest before its next class.
+and `2654` is one floor below. Tap floors in the order you like them and the
+list follows that order first.
+
+On each floor, rooms free for the rest of the day come first, then rooms that
+stay free past the end of the next class, then shorter ones. The app guesses
+when the next class ends from the timetable, so at 9:30 it looks for rooms free
+until 11:15. Walking distance and votes decide within the first two groups,
+and the shorter ones go longest first. A room with under half an hour left drops
+to the bottom of the whole list.
 
 Tap any room for its full day, class by class, with the current one marked.
 Search understands floors, so `3` gives you the third floor rather than every
@@ -29,9 +36,8 @@ be no plug socket, there may be no signal. The portal does not know any of this,
 so the app asks whoever has been inside: door open or locked, AC or not, how
 many charging ports, and which of Jio, Airtel, Vi and BSNL get a signal.
 
-Settled facts move the ranking, measured in the same steps as walking. A room
-three doors away that people say is locked loses to one at the end of the
-corridor. Softer facts count for less, so it will not send you up a floor for
+Settled facts move the ranking. A room people say is locked drops to the end of
+its floor. Softer facts count for less, so it will not send you up a floor for
 air conditioning when there is a plain empty room on yours.
 
 A fact only shows once three people agree and at least sixty percent said the
