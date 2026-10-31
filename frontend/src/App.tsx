@@ -5,22 +5,21 @@ import { LocationBar } from './components/LocationBar'
 import { RoomCard } from './components/RoomCard'
 import { RoomDialog } from './components/RoomDialog'
 import { RoomRow } from './components/RoomRow'
-import { StaleBanner } from './components/StaleBanner'
+import { FloorPicker } from './components/FloorPicker'
 import { TopPick } from './components/TopPick'
+import { useFloorPriority } from './hooks/useFloorPriority'
 import { useMyRoom } from './hooks/useMyRoom'
 import { useNow } from './hooks/useNow'
 import { useTheme } from './hooks/useTheme'
 import { nearYouList, rankRooms, soonestToFree } from './rank'
 import type { Ranked } from './rank'
 import { fmtTime } from './status'
-import { searchScore } from './room'
+import { parseRoom, searchScore } from './room'
+import { inferStay } from './stay'
 import type { Room, TodayPayload } from './types'
 import { MoonIcon, SearchIcon, SunIcon, XIcon } from './icons'
 
 type Tab = 'free' | 'all'
-
-/** The cron refreshes every 2 hours at most, so only warn once it has clearly missed a run. */
-const STALE_AFTER_MS = 3 * 60 * 60_000
 
 export default function App() {
   const now = useNow()
@@ -30,6 +29,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Room | null>(null)
   const [myRoom, setMyRoom] = useMyRoom()
+  const floorPriority = useFloorPriority()
   const { theme, toggle: toggleTheme, switching } = useTheme()
 
   const load = useCallback(async () => {
@@ -110,7 +110,18 @@ export default function App() {
   )
 
   const ranked = useMemo(() => rankRooms(data?.rooms ?? [], now, myRoom), [data, now, myRoom])
-  const freeRooms = useMemo(() => nearYouList(ranked), [ranked])
+  const stay = useMemo(() => inferStay(data?.rooms ?? [], now), [data, now])
+  const freeRooms = useMemo(
+    () => nearYouList(ranked, stay.minutes, floorPriority.floors),
+    [ranked, stay.minutes, floorPriority.floors],
+  )
+  const availableFloors = useMemo(
+    () =>
+      [...new Set((data?.rooms ?? []).map((r) => parseRoom(r.room)?.floor))]
+        .filter((f): f is number => f !== undefined)
+        .sort((a, b) => a - b),
+    [data],
+  )
   const total = data?.rooms.length ?? 0
   const freeCount = freeRooms.length
 
@@ -131,10 +142,6 @@ export default function App() {
     () => search([...ranked].sort((a, b) => a.room.room.localeCompare(b.room.room))),
     [ranked, search],
   )
-
-  const isStale =
-    !!data?.updatedAt &&
-    (data.staleRooms > 0 || now.getTime() - new Date(data.updatedAt).getTime() > STALE_AFTER_MS)
 
   const searching = query.trim().length > 0
   const topPick = searching ? null : filteredFree[0]
@@ -172,11 +179,14 @@ export default function App() {
         </div>
       </header>
 
-      {data?.updatedAt && isStale && (
-        <StaleBanner updatedAt={data.updatedAt} staleRooms={data.staleRooms} now={now} />
-      )}
-
       <LocationBar myRoom={myRoom} onSet={setMyRoom} />
+
+      <FloorPicker
+        available={availableFloors}
+        priority={floorPriority.floors}
+        onToggle={floorPriority.toggle}
+        onClear={floorPriority.clear}
+      />
 
       <div className="search-wrap">
         <SearchIcon className="search-icon" width={16} height={16} />

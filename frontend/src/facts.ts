@@ -114,8 +114,8 @@ export function settledFacts(facts: Facts | undefined): Consensus[] {
  * where one floor is 12. The numbers say how far you should be willing to walk
  * for a good one, or to avoid a bad one.
  *
- * The scale is signed and a room nobody has voted on sits at zero, in the
- * middle. Penalties alone would mean voting can only ever hurt a room, so the
+ * The scale is signed and a room nobody has voted on sits near zero, in the
+ * middle, carrying only the no-AC cost `factCost` assumes. Penalties alone would mean voting can only ever hurt a room, so the
  * unmapped ones would drift to the top by saying nothing, which rewards exactly
  * the rooms we know least about.
  *
@@ -140,11 +140,17 @@ const COST: Record<string, Record<string, number>> = {
   bsnl: { yes: -0.5, no: 1 },
 }
 
-/** Only settled facts count. An attribute nobody has agreed on is worth nothing either way. */
+/**
+ * Only settled facts count. An attribute nobody has agreed on is worth nothing
+ * either way, except AC: most rooms lack it, so a room is costed as having none
+ * until people say otherwise.
+ */
 export function factCost(facts: Facts | undefined): number {
-  return settledFacts(facts).reduce(
+  const settled = settledFacts(facts)
+  const acSettled = settled.some((c) => c.attribute.key === 'ac')
+  return settled.reduce(
     (sum, c) => sum + (COST[c.attribute.key]?.[c.option.value] ?? 0),
-    0,
+    acSettled ? 0 : COST.ac.no_ac,
   )
 }
 

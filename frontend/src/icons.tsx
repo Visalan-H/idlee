@@ -47,16 +47,6 @@ export function ChevronRightIcon(props: IconProps) {
   )
 }
 
-export function AlertIcon(props: IconProps) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M12 3.5 21.5 20h-19Z" />
-      <path d="M12 9.5v4.25" />
-      <circle cx="12" cy="17" r="0.1" fill="currentColor" />
-    </svg>
-  )
-}
-
 export function CheckIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

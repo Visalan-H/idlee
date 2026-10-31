@@ -247,26 +247,80 @@ input {
   pointer-events: none;
 }
 
-/* Stale banner */
+/* Floor picker */
 
-.staleBanner {
+.floor-picker {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 8px;
-  background: var(--soon-tint);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 10px 12px;
   margin-bottom: 12px;
-  font-size: 13px;
-  line-height: 1.4;
-  color: rgba(28, 28, 28, 0.82);
 }
 
-.staleBanner svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: var(--soon);
+.floor-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.floor-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.floor-chip {
+  position: relative;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.floor-chip[data-picked] {
+  background: var(--charcoal);
+  border-color: var(--charcoal);
+  color: var(--offwhite);
+  box-shadow: var(--inset-shadow);
+}
+
+.floor-rank {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--offwhite);
+  border: 1px solid var(--charcoal);
+  color: var(--charcoal);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.floor-chip:focus-visible,
+.floor-clear:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-shadow);
+}
+
+.floor-clear {
+  min-height: 44px;
+  padding: 0 10px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 /* Location bar */
