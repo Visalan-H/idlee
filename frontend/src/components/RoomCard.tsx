@@ -27,7 +27,7 @@ export function RoomCard({ room, status, onOpen }: Props) {
         <span className="card-status-label">{status.label}</span>
       </div>
 
-      <FactChips facts={room.facts} limit={2} />
+      <FactChips facts={room.facts} compact />
     </button>
   )
 }

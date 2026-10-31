@@ -21,7 +21,7 @@ export function RoomRow({ ranked, myRoom, onOpen }: Props) {
         <div className="room-row-title-wrap">
           <span className="room-row-name">{room.room}</span>
           <span className="room-row-floor">{floor}</span>
-          <FactChips facts={room.facts} limit={2} />
+          <FactChips facts={room.facts} />
         </div>
       </div>
 
