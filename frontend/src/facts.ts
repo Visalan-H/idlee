@@ -187,8 +187,8 @@ export function carrierChip(facts: Facts | undefined): FactChip | null {
 }
 
 /**
- * Read-only summary chips. The carrier chip leads, because the compact lists slice
- * this to the first two and signal is the fact people scan for.
+ * Read-only summary chips. The carrier chip leads, because signal is the fact
+ * people scan for.
  */
 export function factChips(facts: Facts | undefined): FactChip[] {
   const chips: FactChip[] = settledFacts(facts)
