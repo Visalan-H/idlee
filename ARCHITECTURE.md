@@ -243,17 +243,19 @@ adding a consent obligation and a tracking library to defend a vote about air
 conditioning. If real enforcement is ever needed, the door QR token already
 proves someone stood at that room, which is a better qualification than identity.
 
-### A vote takes ten minutes to show up for everyone else
+### A vote shows up for everyone else at the next refresh
 
-Tallies ride along in `GET /api/rooms`, which sits behind `s-maxage=600`. Giving
+Tallies ride along in `GET /api/rooms`, which the edge holds until the next
+refresh window. Giving
 votes their own uncached endpoint would mean a second request per room and a
 cache-busting one at that, to deliver counts that change a handful of times a
 week.
 
 So the voter sees their own choice immediately, from localStorage, and everyone
-else sees it at the next edge revalidation. The count next to an option can
-therefore lag the button state by a few minutes. That is the intended trade, not
-a bug to fix.
+else sees it once the next window opens. The count next to an option can
+therefore lag the button state by up to two hours in the day, and a vote cast
+after the last refresh waits until the first one next morning. That is the
+intended trade, not a bug to fix.
 
 ## Serving
 
@@ -268,9 +270,20 @@ can hold it, and labels stay correct as time passes without a refetch.
 
 ### Edge caching over a database round trip
 
-`GET /api/rooms` sets `s-maxage=600, stale-while-revalidate=1800`. The data
-changes a handful of times a day, so ten minutes of edge cache costs nothing in
-accuracy and means traffic spikes never reach Neon.
+Room data only changes when a scrape lands, and a scrape only starts inside a
+target's window. So `GET /api/rooms` is cached at the edge until the next window
+opens, or until IST midnight when the day rolls over. Inside a window it sends
+`no-store`, and every request reads Neon until the new data is in. The window
+runs from the target to `REFRESH_GRACE_MIN` plus five minutes after it, which
+covers a late tick and a 40 second scrape.
+
+There is no `stale-while-revalidate`. An earlier version had ten minutes of
+`s-maxage` and thirty of stale, so a student could see a timetable forty minutes
+behind the scrape. Rooms are the one thing this app cannot get wrong.
+
+`roomsCacheSeconds` reads the same `REFRESH_TARGETS` as the tick, so moving the
+schedule moves the cache with it. Votes ride in the same payload, so
+other people see a new one at the next window.
 
 ### No polling
 

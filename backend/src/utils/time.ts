@@ -28,3 +28,10 @@ export function hmToMinutes(hm: string) {
   if (h > 23 || min > 59) return NaN
   return h * 60 + min
 }
+
+// The reverse of hmToMinutes, zero padded, so 585 becomes "09:45".
+export function minutesToHm(minutes: number) {
+  const h = String(Math.floor(minutes / 60)).padStart(2, '0')
+  const m = String(minutes % 60).padStart(2, '0')
+  return `${h}:${m}`
+}

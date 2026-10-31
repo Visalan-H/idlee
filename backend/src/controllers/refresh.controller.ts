@@ -2,7 +2,8 @@ import type { Request, Response } from 'express'
 import { waitUntil } from '@vercel/functions'
 import { pool } from '../config/db.js'
 import { refreshAll } from '../services/refresh.service.js'
-import { hmToMinutes, istHm } from '../utils/time.js'
+import { refreshGrace, refreshTargets } from '../config/schedule.js'
+import { hmToMinutes, istHm, minutesToHm } from '../utils/time.js'
 
 export function runRefresh(req: Request, res: Response) {
   const offset = Math.max(0, Number(req.query.offset) || 0)
@@ -32,21 +33,16 @@ export function runRefresh(req: Request, res: Response) {
 // The default grace matches the cron interval. A narrower window than the
 // interval lets a target fall between two ticks and lose the slot for the day.
 export async function runTick(_req: Request, res: Response) {
-  const targets = (process.env.REFRESH_TARGETS ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-
-  const graceRaw = Number(process.env.REFRESH_GRACE_MIN)
-  const grace = Number.isFinite(graceRaw) && graceRaw >= 0 ? graceRaw : 5
+  const grace = refreshGrace()
 
   const ist = istHm()
   const nowMin = hmToMinutes(ist)
 
-  const matched = targets.find((t) => {
-    const delta = nowMin - hmToMinutes(t)
+  const target = refreshTargets().find((t) => {
+    const delta = nowMin - t
     return delta >= 0 && delta <= grace
   })
+  const matched = target === undefined ? undefined : minutesToHm(target)
 
   if (!matched) {
     return res.json({ ok: true, ist, triggered: false })
