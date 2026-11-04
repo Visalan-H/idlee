@@ -1451,30 +1451,38 @@ a.tab-item {
   text-decoration: none;
 }
 
-/* Your room and floors, folded */
+/* Your room and floors: two separate buttons on one line */
 
 .prefs {
   margin-bottom: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--cream);
+}
+
+.prefs-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .prefs-toggle {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
-  width: 100%;
-  min-height: 46px;
-  padding: 10px 14px;
-  background: none;
-  border: none;
-  border-radius: var(--radius-md);
-  color: inherit;
+  gap: 6px;
+  min-height: 40px;
+  max-width: 100%;
+  padding: 8px 12px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
   font: inherit;
-  font-size: 14px;
-  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.prefs-toggle[data-set] {
+  color: var(--charcoal);
+  border-color: var(--border-strong);
 }
 
 .prefs-toggle:focus-visible {
@@ -1483,35 +1491,21 @@ a.tab-item {
 }
 
 .prefs-summary {
-  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
-.prefs-summary.muted {
-  color: var(--muted);
-  font-weight: 400;
-}
-
-.prefs-cue {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
 .prefs-chevron {
+  flex: 0 0 auto;
+  transform: rotate(90deg);
   transition: transform 0.2s ease;
 }
 
-.prefs[data-open] .prefs-chevron {
-  transform: rotate(90deg);
+.prefs-toggle[data-open] .prefs-chevron {
+  transform: rotate(-90deg);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1521,14 +1515,10 @@ a.tab-item {
 }
 
 .prefs-panel {
-  padding: 4px 14px 14px;
-  border-top: 1px solid var(--border);
+  margin-top: 8px;
 }
 
-.prefs-panel .location-box {
-  margin-top: 10px;
-}
-
+.prefs-panel .location-box,
 .prefs-panel .floor-picker {
   margin-bottom: 0;
 }

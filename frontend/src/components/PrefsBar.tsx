@@ -15,9 +15,12 @@ interface Props {
 
 const floorName = (f: number) => (f === 0 ? 'G' : String(f))
 
+type Panel = 'room' | 'floors'
+
 /**
- * Your room and floor order, folded into one line. Both are set once and rarely
- * touched, so they stay out of the way until tapped.
+ * Your room and your floor order, as two small buttons on one line. They are
+ * separate settings, each set once and rarely touched, so each opens on its own
+ * and stays out of the way otherwise.
  */
 export function PrefsBar({
   myRoom,
@@ -27,35 +30,59 @@ export function PrefsBar({
   onToggleFloor,
   onClearFloors,
 }: Props) {
-  const [open, setOpen] = useState(false)
-
-  const parts = [
-    myRoom ? `Near ${myRoom}` : null,
-    floors.length ? `Floors ${floors.map(floorName).join(', ')}` : null,
-  ].filter(Boolean)
-  const empty = onSetRoom ? 'Set your room and floors' : 'Prefer some floors?'
+  const [open, setOpen] = useState<Panel | null>(null)
+  const toggle = (panel: Panel) => setOpen((cur) => (cur === panel ? null : panel))
 
   return (
-    <div className="prefs" data-open={open || undefined}>
-      <button
-        type="button"
-        className="prefs-toggle"
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <PinIcon className="loc-icon" width={15} height={15} />
-        <span className={parts.length ? 'prefs-summary' : 'prefs-summary muted'}>
-          {parts.length ? parts.join(' · ') : empty}
-        </span>
-        <span className="prefs-cue">
-          {open ? 'Done' : 'Change'}
-          <ChevronRightIcon className="prefs-chevron" width={13} height={13} />
-        </span>
-      </button>
+    <div className="prefs">
+      <div className="prefs-buttons">
+        {onSetRoom && (
+          <button
+            type="button"
+            className="prefs-toggle"
+            data-open={open === 'room' || undefined}
+            data-set={myRoom ? true : undefined}
+            aria-expanded={open === 'room'}
+            onClick={() => toggle('room')}
+          >
+            <PinIcon className="loc-icon" width={14} height={14} />
+            <span className="prefs-summary">{myRoom ? `Near ${myRoom}` : 'Your room'}</span>
+            <ChevronRightIcon className="prefs-chevron" width={12} height={12} />
+          </button>
+        )}
 
-      {open && (
+        {availableFloors.length > 1 && (
+          <button
+            type="button"
+            className="prefs-toggle"
+            data-open={open === 'floors' || undefined}
+            data-set={floors.length ? true : undefined}
+            aria-expanded={open === 'floors'}
+            onClick={() => toggle('floors')}
+          >
+            <span className="prefs-summary">
+              {floors.length ? `Floors ${floors.map(floorName).join(', ')}` : 'Floors'}
+            </span>
+            <ChevronRightIcon className="prefs-chevron" width={12} height={12} />
+          </button>
+        )}
+      </div>
+
+      {open === 'room' && onSetRoom && (
         <div className="prefs-panel">
-          {onSetRoom && <LocationBar myRoom={myRoom ?? null} onSet={onSetRoom} />}
+          <LocationBar
+            myRoom={myRoom ?? null}
+            startEditing
+            onSet={(room) => {
+              onSetRoom(room)
+              setOpen(null)
+            }}
+          />
+        </div>
+      )}
+
+      {open === 'floors' && (
+        <div className="prefs-panel">
           <FloorPicker
             available={availableFloors}
             priority={floors}

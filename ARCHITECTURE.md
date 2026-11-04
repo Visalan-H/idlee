@@ -448,9 +448,10 @@ is the worst answer the app could give.
 
 ### Settings fold away, rows stay on one line
 
-Your room and floor order sit behind one summary line, "Near 3654 · Floors 3, 2",
-because they are set once and then left alone. Open, they took two rows of the
-first screen on every visit.
+Your room and your floor order are two small buttons on one line, "Near 3654"
+and "Floors 3, 2", each opening only its own setting. They are separate choices,
+set once and then left alone. Open, they took two rows of the first screen on
+every visit.
 
 A list row holds the number and at most two chips. The floor is the number's
 first digit, so it is not spelled out: a warning (locked,
