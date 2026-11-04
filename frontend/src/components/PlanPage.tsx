@@ -9,7 +9,7 @@ import { parseRoom } from '../room'
 import { fmtTime } from '../status'
 import type { PlanPayload, Room } from '../types'
 import { EmptyState } from './EmptyState'
-import { FloorPicker } from './FloorPicker'
+import { PrefsBar } from './PrefsBar'
 import { RoomDialog } from './RoomDialog'
 import { RoomRow } from './RoomRow'
 
@@ -77,7 +77,6 @@ export function PlanPage() {
           <a className="header-title" href="/">
             Idlee
           </a>
-          <span className="header-page">Plan ahead</span>
         </div>
         <div className="header-right">
           {plan?.updatedAt && (
@@ -95,9 +94,17 @@ export function PlanPage() {
         </div>
       </header>
 
-      <a className="page-switch" href="/">
-        ← Free right now
-      </a>
+      <nav className="tabs">
+        <a className="tab-item" href="/">
+          <span>Free now</span>
+        </a>
+        <a className="tab-item" href="/?tab=all">
+          <span>All rooms</span>
+        </a>
+        <span className="tab-item active" aria-current="page">
+          <span>Plan ahead</span>
+        </span>
+      </nav>
 
       <div className="plan-picker">
         <span className="floor-label">Day</span>
@@ -142,11 +149,11 @@ export function PlanPage() {
         </div>
       </div>
 
-      <FloorPicker
-        available={availableFloors}
-        priority={floorPriority.floors}
-        onToggle={floorPriority.toggle}
-        onClear={floorPriority.clear}
+      <PrefsBar
+        availableFloors={availableFloors}
+        floors={floorPriority.floors}
+        onToggleFloor={floorPriority.toggle}
+        onClearFloors={floorPriority.clear}
       />
 
       {error && (

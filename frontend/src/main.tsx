@@ -6,6 +6,10 @@ import './styles.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {window.location.pathname.replace(/\/+$/, '') === '/plan' ? <PlanPage /> : <App />}
+    {window.location.pathname.replace(/\/+$/, '') === '/plan' ? (
+      <PlanPage />
+    ) : (
+      <App initialTab={new URLSearchParams(window.location.search).get('tab') === 'all' ? 'all' : 'free'} />
+    )}
   </StrictMode>,
 )

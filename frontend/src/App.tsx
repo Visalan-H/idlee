@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchToday } from './api'
 import { EmptyState } from './components/EmptyState'
-import { LocationBar } from './components/LocationBar'
 import { RoomCard } from './components/RoomCard'
 import { RoomDialog } from './components/RoomDialog'
 import { RoomRow } from './components/RoomRow'
-import { FloorPicker } from './components/FloorPicker'
+import { PrefsBar } from './components/PrefsBar'
 import { TopPick } from './components/TopPick'
 import { useFloorPriority } from './hooks/useFloorPriority'
 import { useMyRoom } from './hooks/useMyRoom'
@@ -19,13 +18,13 @@ import { inferStay } from './stay'
 import type { Room, TodayPayload } from './types'
 import { MoonIcon, SearchIcon, SunIcon, XIcon } from './icons'
 
-type Tab = 'free' | 'all'
+export type Tab = 'free' | 'all'
 
-export default function App() {
+export default function App({ initialTab = 'free' }: { initialTab?: Tab }) {
   const now = useNow()
   const [data, setData] = useState<TodayPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('free')
+  const [tab, setTab] = useState<Tab>(initialTab)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Room | null>(null)
   const [myRoom, setMyRoom] = useMyRoom()
@@ -179,17 +178,35 @@ export default function App() {
         </div>
       </header>
 
-      <a className="page-switch" href="/plan">
-        Need a room for a later class? Plan ahead →
-      </a>
+      <div className="tabs">
+        <button
+          type="button"
+          className={`tab-item ${tab === 'free' ? 'active' : ''}`}
+          onClick={() => setTab('free')}
+        >
+          <span>Free now</span>
+          <span className="tab-pill">{freeCount}</span>
+        </button>
+        <button
+          type="button"
+          className={`tab-item ${tab === 'all' ? 'active' : ''}`}
+          onClick={() => setTab('all')}
+        >
+          <span>All rooms</span>
+          <span className="tab-pill">{total}</span>
+        </button>
+        <a className="tab-item" href="/plan">
+          <span>Plan ahead</span>
+        </a>
+      </div>
 
-      <LocationBar myRoom={myRoom} onSet={setMyRoom} />
-
-      <FloorPicker
-        available={availableFloors}
-        priority={floorPriority.floors}
-        onToggle={floorPriority.toggle}
-        onClear={floorPriority.clear}
+      <PrefsBar
+        myRoom={myRoom}
+        onSetRoom={setMyRoom}
+        availableFloors={availableFloors}
+        floors={floorPriority.floors}
+        onToggleFloor={floorPriority.toggle}
+        onClearFloors={floorPriority.clear}
       />
 
       <div className="search-wrap">
@@ -212,24 +229,6 @@ export default function App() {
         )}
       </div>
 
-      <div className="tabs">
-        <button
-          type="button"
-          className={`tab-item ${tab === 'free' ? 'active' : ''}`}
-          onClick={() => setTab('free')}
-        >
-          <span>Free now</span>
-          <span className="tab-pill">{freeCount}</span>
-        </button>
-        <button
-          type="button"
-          className={`tab-item ${tab === 'all' ? 'active' : ''}`}
-          onClick={() => setTab('all')}
-        >
-          <span>All rooms</span>
-          <span className="tab-pill">{total}</span>
-        </button>
-      </div>
 
       {error && (
         <EmptyState title="Couldn't load the schedule">

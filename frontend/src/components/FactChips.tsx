@@ -10,9 +10,29 @@ import type { Facts } from '../types'
 const fitsCompact = (chip: FactChip) =>
   chip.key !== 'ac' && !(chip.key === 'door' && !chip.warn)
 
+/**
+ * What a one-line row has room for: warnings, signal, and AC when a room has it.
+ * "No AC" and port counts are what most rooms look like, so they stay in the sheet.
+ */
+const rowPriority = (chip: FactChip) =>
+  chip.warn ? 0 : chip.key === 'carrier' ? 1 : chip.key === 'ac' && chip.text === 'AC' ? 2 : null
+
+interface Props {
+  facts: Facts | undefined
+  compact?: boolean
+  /** Show at most this many of the row-worthy chips, the most useful first. */
+  limit?: number
+}
+
 /** Read-only consensus, for places too tight for the voting buttons. */
-export function FactChips({ facts, compact }: { facts: Facts | undefined; compact?: boolean }) {
-  const chips = factChips(facts).filter((chip) => !compact || fitsCompact(chip))
+export function FactChips({ facts, compact, limit }: Props) {
+  let chips = factChips(facts).filter((chip) => !compact || fitsCompact(chip))
+  if (limit !== undefined) {
+    chips = chips
+      .filter((chip) => rowPriority(chip) !== null)
+      .sort((a, b) => rowPriority(a)! - rowPriority(b)!)
+      .slice(0, limit)
+  }
   if (!chips.length) return null
 
   return (

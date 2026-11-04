@@ -1443,32 +1443,133 @@ input {
 
 /* Plan ahead */
 
-.header-page {
-  margin-left: 8px;
-  font-size: 14px;
-  color: var(--muted);
-}
-
 a.header-title {
   text-decoration: none;
 }
 
-.page-switch {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  margin-bottom: 8px;
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+a.tab-item {
+  text-decoration: none;
 }
 
-.page-switch:focus-visible {
+/* Your room and floors, folded */
+
+.prefs {
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--cream);
+}
+
+.prefs-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prefs-toggle:focus-visible {
   outline: none;
   box-shadow: var(--focus-shadow);
-  border-radius: var(--radius-sm);
+}
+
+.prefs-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.prefs-summary.muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.prefs-cue {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.prefs-chevron {
+  transition: transform 0.2s ease;
+}
+
+.prefs[data-open] .prefs-chevron {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prefs-chevron {
+    transition: none;
+  }
+}
+
+.prefs-panel {
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.prefs-panel .location-box {
+  margin-top: 10px;
+}
+
+.prefs-panel .floor-picker {
+  margin-bottom: 0;
+}
+
+/* One line per room: number, floor and the two chips that matter most. */
+.room-row .room-row-title-wrap {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.room-row .room-row-floor {
+  white-space: nowrap;
+}
+
+/* A chip that does not fit wraps onto a second line, which is clipped, so it
+   disappears whole instead of being cut in half. */
+.room-row .fact-chips {
+  height: 19px;
+  margin-top: 0;
+  overflow: hidden;
+}
+
+.room-row .room-row-left {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.room-row .room-row-right {
+  flex: 0 0 auto;
+}
+
+.tabs .tab-item {
+  gap: 5px;
+  padding: 8px 6px;
+  white-space: nowrap;
+}
+
+.room-row {
+  min-height: 52px;
 }
 
 .plan-picker {

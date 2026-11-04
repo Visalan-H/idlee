@@ -446,6 +446,20 @@ prefers one nobody calls locked, and falls back to the locked one only when
 every candidate is locked. Waiting twenty minutes for a door that does not open
 is the worst answer the app could give.
 
+### Settings fold away, rows stay on one line
+
+Your room and floor order sit behind one summary line, "Near 3654 · Floors 3, 2",
+because they are set once and then left alone. Open, they took two rows of the
+first screen on every visit.
+
+A list row holds the number, the floor and at most two chips: a warning (locked,
+no signal, no ports), the working carriers, or AC when the room has it. "No AC"
+and port counts describe most rooms, so they say little in a list and stay in
+the room sheet with everything else. A chip that does not fit wraps onto a
+clipped second line and disappears whole rather than being cut in half.
+
+Plan ahead is the third tab. On the plan page the tabs are links back to `/`.
+
 ### Search scores, it does not filter
 
 Typing `3` on a substring filter returns 2371 before 3654, which is useless.
