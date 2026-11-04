@@ -460,6 +460,9 @@ and port counts describe most rooms, so they say little in a list and stay in
 the room sheet with everything else. A chip that does not fit wraps onto a
 clipped second line and disappears whole rather than being cut in half.
 
+The best pick card keeps the same chip rules with room for three, and the
+whole card is the tap target, so it has no separate Details footer.
+
 Plan ahead is the third tab. On the plan page the tabs are links back to `/`.
 
 ### Search scores, it does not filter
