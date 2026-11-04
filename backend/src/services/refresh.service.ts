@@ -20,7 +20,7 @@ function labelMatches(label: string, roomNo: string) {
 }
 
 async function refreshRoom(room: RoomRow, now: Date) {
-  const { label, sessions } = await scrapeRoom(room.location_id, room.token)
+  const { label, sessions, cardCount } = await scrapeRoom(room.location_id, room.token)
 
   // If the page names a different room, this row's token points elsewhere and
   // writing its sessions here would file another room's timetable under this
@@ -33,12 +33,16 @@ async function refreshRoom(room: RoomRow, now: Date) {
   const upcoming = sessions.filter((s) => new Date(s.startsAt) > now)
 
   // A full page means there may be more bookings behind the last card, so the
-  // schedule is only known up to where that card ends. Counted on every card,
-  // including one already under way, because that one took a slot on the page too.
+  // schedule is only known up to where that card ends. Counted on every card on
+  // the page, including one already under way and any the parser could not read,
+  // because each took a slot. A full page with nothing readable on it is known
+  // only up to now.
   const knownUntil =
-    sessions.length >= CARD_CAP
-      ? sessions.reduce((max, s) => (s.endsAt > max ? s.endsAt : max), sessions[0].endsAt)
-      : null
+    cardCount < CARD_CAP
+      ? null
+      : sessions.length
+        ? sessions.reduce((max, s) => (s.endsAt > max ? s.endsAt : max), sessions[0].endsAt)
+        : now.toISOString()
   const client = await pool.connect()
 
   try {
@@ -55,10 +59,10 @@ async function refreshRoom(room: RoomRow, now: Date) {
       )
     }
 
-    await client.query('update rooms set fetched_at = now(), known_until = $2 where id = $1', [
-      room.id,
-      knownUntil,
-    ])
+    await client.query(
+      'update rooms set fetched_at = now(), known_until = $2, card_count = $3 where id = $1',
+      [room.id, knownUntil, cardCount],
+    )
     await client.query('commit')
   } catch (err) {
     await client.query('rollback')

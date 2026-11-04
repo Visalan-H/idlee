@@ -88,6 +88,16 @@ ends, and nothing after it counts as known. Under four, it is null, because the
 room has no bookings the page left out. The plan page reads it to tell "free"
 from "can't see that far yet", and never shows the second as the first.
 
+The count is of cards on the page, not cards that parsed. A card whose date line
+the parser cannot read still took one of the four places, and counting only the
+readable ones would mark a full page as complete.
+
+`rooms.card_count` holds that count. A room with no count has not been scraped
+since the columns arrived, so the plan endpoint reports it as known only up to
+its last fetch and every later slot shows as unconfirmed, never free. The home
+payload reads neither column, so `/api/rooms` keeps working before the schema
+runs. A refresh does write them, so run `npm run schema` before deploying.
+
 `?scope=past` exists on the portal and the app never calls it. Doubling the
 request count to reconstruct history nobody asked for is not worth it.
 

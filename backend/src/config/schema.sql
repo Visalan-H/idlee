@@ -8,10 +8,13 @@ create table if not exists rooms (
 );
 
 -- The portal shows a room's next four bookings and nothing past them. When a
--- scrape hits that cap, this is where the fourth one ends, and nothing after it
--- is known. Null means the scrape came back under the cap, so every booking the
--- room has was seen.
+-- scrape hits that cap, known_until is where the fourth one ends, and nothing
+-- after it is known. Null means the scrape came back under the cap, so every
+-- booking the room has was seen. card_count is how many cards that scrape saw;
+-- null means the room has not been scraped since these columns arrived, so how
+-- far its schedule reaches is not known at all.
 alter table rooms add column if not exists known_until timestamptz;
+alter table rooms add column if not exists card_count integer;
 
 create table if not exists sessions (
   id         serial primary key,

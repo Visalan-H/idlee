@@ -13,10 +13,9 @@ import { PrefsBar } from './PrefsBar'
 import { RoomDialog } from './RoomDialog'
 import { RoomRow } from './RoomRow'
 
-/** The first slot that has not ended yet on `day`, or the first slot of a later day. */
+/** The first slot that has not ended yet on `day`, or -1 when every one has. */
 function firstOpenSlot(day: string, now: Date) {
-  const i = SLOTS.findIndex((s) => at(day, s.end) > now)
-  return i === -1 ? 0 : i
+  return SLOTS.findIndex((s) => at(day, s.end) > now)
 }
 
 export function PlanPage() {
@@ -26,6 +25,8 @@ export function PlanPage() {
   const [slotIndex, setSlotIndex] = useState(0)
   const [plans, setPlans] = useState<Record<string, PlanPayload>>({})
   const [error, setError] = useState<string | null>(null)
+  // Bumped to fetch the same day again: a retry, or coming back to the tab.
+  const [attempt, setAttempt] = useState(0)
   const [showUnknown, setShowUnknown] = useState(false)
   const [selected, setSelected] = useState<Room | null>(null)
   const floorPriority = useFloorPriority()
@@ -42,16 +43,42 @@ export function PlanPage() {
     return () => {
       cancelled = true
     }
-  }, [day])
+  }, [day, attempt])
+
+  // Coming back to the tab is when an evening refresh may have landed. No polling.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') setAttempt((n) => n + 1)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
+  // Time moves on under an open tab. A slot that has ended is no use to plan for,
+  // so step to the next one, and past today's last slot, or midnight, to the next day.
+  useEffect(() => {
+    if (!days.includes(day)) {
+      setDay(days[0])
+      setSlotIndex(Math.max(0, firstOpenSlot(days[0], now)))
+      return
+    }
+    if (at(day, SLOTS[slotIndex].end) > now) return
+    const next = firstOpenSlot(day, now)
+    if (next !== -1) {
+      setSlotIndex(next)
+    } else {
+      setDay(days[1])
+      setSlotIndex(0)
+    }
+  }, [now, days, day, slotIndex])
 
   const pickDay = (next: string) => {
     setDay(next)
-    setSlotIndex(firstOpenSlot(next, now))
+    setSlotIndex(Math.max(0, firstOpenSlot(next, now)))
     setShowUnknown(false)
   }
 
   const slot = SLOTS[slotIndex]
-  const slotOver = at(day, slot.end) <= now
   const result = useMemo(
     () => (plan ? planRooms(plan.rooms, day, slot, floorPriority.floors) : null),
     [plan, day, slot, floorPriority.floors],
@@ -116,6 +143,7 @@ export function PlanPage() {
               className="floor-chip"
               data-picked={d === day || undefined}
               aria-pressed={d === day}
+              disabled={firstOpenSlot(d, now) === -1}
               onClick={() => pickDay(d)}
             >
               {dayLabel(d, now)}
@@ -159,7 +187,7 @@ export function PlanPage() {
       {error && (
         <EmptyState title="Couldn't load the schedule">
           <p className="emptyState-note">{error}</p>
-          <button type="button" className="btn btn-dark" onClick={() => pickDay(day)}>
+          <button type="button" className="btn btn-dark" onClick={() => setAttempt((n) => n + 1)}>
             Try again
           </button>
         </EmptyState>
@@ -179,8 +207,6 @@ export function PlanPage() {
             Free {dayPhrase(day, now)}, {slotLabel(day, slot)}
             <span className="tab-pill">{result.free.length}</span>
           </h2>
-
-          {slotOver && <p className="plan-note">This class time is already over.</p>}
 
           {result.free.length > 0 ? (
             <div className="list-group">

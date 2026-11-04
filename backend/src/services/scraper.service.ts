@@ -18,6 +18,8 @@ const META =
 export interface ScrapedRoom {
   label: string | null
   sessions: ScrapedSession[]
+  /** Every card on the page, including any the parser could not read. */
+  cardCount: number
 }
 
 export function parse(html: string): ScrapedRoom {
@@ -48,7 +50,7 @@ export function parse(html: string): ScrapedRoom {
     })
   })
 
-  return { label, sessions }
+  return { label, sessions, cardCount: $('.session-card').length }
 }
 
 async function fetchRoom(url: string) {

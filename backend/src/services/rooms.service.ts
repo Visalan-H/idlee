@@ -7,7 +7,7 @@ interface Row {
   room_no: string
   fresh: boolean
   fetched_at: Date | null
-  known_until: Date | null
+  known_until?: Date | null
   starts_at: Date | null
   ends_at: Date | null
   course: string | null
@@ -17,8 +17,8 @@ interface RoomDay {
   room: string
   fresh: boolean
   fetchedAt: string | null
-  /** Bookings after this instant were past the portal's cap. Null means none were. */
-  knownUntil: string | null
+  /** Plan only. Bookings after this instant were past the portal's cap. Null means none were. */
+  knownUntil?: string | null
   sessions: { startsAt: string; endsAt: string; course: string | null }[]
   /** Crowd votes, omitted for rooms nobody has voted on. */
   facts?: Facts
@@ -27,13 +27,18 @@ interface RoomDay {
 /** How far ahead the plan page may look, today included. */
 export const PLAN_DAYS = 7
 
-async function loadDay(day: string) {
+// The home page reads no column the plan page added, so it keeps working if the
+// code ships before `npm run schema` has run.
+const PLAN_COLUMNS = `
+              -- Not scraped since card_count arrived: certain only up to that fetch.
+              case when r.card_count is null then r.fetched_at else r.known_until end as known_until,`
+
+async function loadDay(day: string, withReach: boolean) {
   const [{ rows }, lastRun, facts] = await Promise.all([
     pool.query<Row>(
       `select r.room_no,
               r.fetched_at > now() - interval '20 hours' as fresh,
-              r.fetched_at,
-              r.known_until,
+              r.fetched_at,${withReach ? PLAN_COLUMNS : ''}
               s.starts_at, s.ends_at, s.course
          from rooms r
          left join sessions s on s.room_id = r.id and s.day = $1
@@ -56,7 +61,7 @@ async function loadDay(day: string) {
         room: row.room_no,
         fresh: row.fresh === true,
         fetchedAt: row.fetched_at?.toISOString() ?? null,
-        knownUntil: row.known_until?.toISOString() ?? null,
+        ...(withReach && { knownUntil: row.known_until?.toISOString() ?? null }),
         sessions: [],
       }
       byRoom.set(row.room_no, entry)
@@ -84,7 +89,7 @@ async function loadDay(day: string) {
 
 export async function getToday() {
   const day = istToday()
-  const { updatedAt, rooms } = await loadDay(day)
+  const { updatedAt, rooms } = await loadDay(day, false)
 
   return {
     day,
@@ -105,6 +110,6 @@ export function isPlannableDay(day: string) {
  * stops being certain, since a busy room's later classes can sit past the cap.
  */
 export async function getPlan(day: string) {
-  const { updatedAt, rooms } = await loadDay(day)
+  const { updatedAt, rooms } = await loadDay(day, true)
   return { day, updatedAt, rooms }
 }
