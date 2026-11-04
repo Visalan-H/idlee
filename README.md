@@ -32,7 +32,7 @@ room with a 3 in the number.
 ## Plan ahead
 
 `/plan` is for booking a room for a later class. Pick a day and a class time and
-it lists every room free for that whole class, nearest first. The portal only
+it lists every room free for that whole class, on your preferred floors first. The portal only
 shows each room's next four classes, so a busy room's later slots can be out of
 sight. Those rooms are listed separately as "can't confirm yet" rather than
 called free.

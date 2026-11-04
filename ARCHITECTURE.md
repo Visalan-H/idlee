@@ -311,7 +311,8 @@ Teachers move classes and need a room for a later slot, often tomorrow's.
 Opening rooms one by one to read their day does not scale past three rooms.
 
 `/plan` takes a day and a class slot and lists every room free for the whole
-slot, in the same floor-then-distance order as the home list. It reads
+slot, ordered by the chosen floors and then votes. It has no "set your room",
+since someone planning tomorrow is not standing anywhere yet. It reads
 `GET /api/rooms/plan?day=YYYY-MM-DD`, which is today's payload for another day
 plus `knownUntil` per room, cached the same way. Days run from today to six
 days out.

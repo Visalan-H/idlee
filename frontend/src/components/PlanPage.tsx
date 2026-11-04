@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchPlan } from '../api'
 import { useFloorPriority } from '../hooks/useFloorPriority'
-import { useMyRoom } from '../hooks/useMyRoom'
 import { useNow } from '../hooks/useNow'
 import { useTheme } from '../hooks/useTheme'
 import { MoonIcon, SunIcon } from '../icons'
@@ -11,7 +10,6 @@ import { fmtTime } from '../status'
 import type { PlanPayload, Room } from '../types'
 import { EmptyState } from './EmptyState'
 import { FloorPicker } from './FloorPicker'
-import { LocationBar } from './LocationBar'
 import { RoomDialog } from './RoomDialog'
 import { RoomRow } from './RoomRow'
 
@@ -30,7 +28,6 @@ export function PlanPage() {
   const [error, setError] = useState<string | null>(null)
   const [showUnknown, setShowUnknown] = useState(false)
   const [selected, setSelected] = useState<Room | null>(null)
-  const [myRoom, setMyRoom] = useMyRoom()
   const floorPriority = useFloorPriority()
   const { theme, toggle: toggleTheme, switching } = useTheme()
 
@@ -56,8 +53,8 @@ export function PlanPage() {
   const slot = SLOTS[slotIndex]
   const slotOver = at(day, slot.end) <= now
   const result = useMemo(
-    () => (plan ? planRooms(plan.rooms, day, slot, myRoom, floorPriority.floors) : null),
-    [plan, day, slot, myRoom, floorPriority.floors],
+    () => (plan ? planRooms(plan.rooms, day, slot, floorPriority.floors) : null),
+    [plan, day, slot, floorPriority.floors],
   )
 
   const availableFloors = useMemo(
@@ -145,8 +142,6 @@ export function PlanPage() {
         </div>
       </div>
 
-      <LocationBar myRoom={myRoom} onSet={setMyRoom} />
-
       <FloorPicker
         available={availableFloors}
         priority={floorPriority.floors}
@@ -186,7 +181,7 @@ export function PlanPage() {
                 <RoomRow
                   key={item.room.room}
                   ranked={item}
-                  myRoom={myRoom}
+                  myRoom={null}
                   onOpen={() => setSelected(item.room)}
                 />
               ))}
@@ -219,7 +214,7 @@ export function PlanPage() {
                       <RoomRow
                         key={item.room.room}
                         ranked={item}
-                        myRoom={myRoom}
+                        myRoom={null}
                         onOpen={() => setSelected(item.room)}
                       />
                     ))}
@@ -240,7 +235,6 @@ export function PlanPage() {
       <RoomDialog
         room={openRoom}
         now={now}
-        myRoom={myRoom}
         onClose={() => setSelected(null)}
         scheduleHeading={`Classes ${dayPhrase(day, now)}`}
         slotStatus={openCheck ?? undefined}

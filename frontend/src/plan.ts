@@ -1,4 +1,4 @@
-import { distance, parseRoom } from './room'
+import { parseRoom } from './room'
 import { factCost, isLocked } from './facts'
 import { IST, fmtTime } from './status'
 import type { Ranked } from './rank'
@@ -102,22 +102,19 @@ export interface PlanRow extends Ranked {
   check: SlotCheck
 }
 
-const UNPLACED = 999
-
 /**
- * Rooms for one slot, split by what is known. Free rooms follow the same rules
- * as the home list: the student's floor order first, a room people call locked
- * at the end of its floor, then walking distance plus votes.
+ * Rooms for one slot, split by what is known. Free rooms go by the chosen floor
+ * order first, a room people call locked at the end of its floor, then votes.
+ * Nobody planning tomorrow is standing anywhere yet, so walking distance is left out.
  */
-export function planRooms(rooms: Room[], day: string, slot: Slot, from: string | null, floors: number[]) {
+export function planRooms(rooms: Room[], day: string, slot: Slot, floors: number[]) {
   const rows: PlanRow[] = rooms.map((room) => {
     const check = checkSlot(room, day, slot)
-    const steps = from ? distance(from, room.room) : null
     return {
       room,
       check,
-      distance: steps,
-      cost: (from ? (steps ?? UNPLACED) : 0) + factCost(room.facts),
+      distance: null,
+      cost: factCost(room.facts),
       // RoomRow reads status for its dot and label.
       status: { kind: check.state, label: check.label },
     }
