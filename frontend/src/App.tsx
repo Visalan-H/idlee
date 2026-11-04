@@ -179,6 +179,10 @@ export default function App() {
         </div>
       </header>
 
+      <a className="page-switch" href="/plan">
+        Need a room for a later class? Plan ahead →
+      </a>
+
       <LocationBar myRoom={myRoom} onSet={setMyRoom} />
 
       <FloorPicker

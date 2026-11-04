@@ -60,6 +60,9 @@ async function fetchRoom(url: string) {
   return parse(await res.text())
 }
 
+/** The portal never shows more than this many future bookings for a room. */
+export const CARD_CAP = 4
+
 export async function scrapeRoom(locationId: number, token: string) {
   const url = `https://learner.saveetha.in/general/locations/${locationId}/${token}/?scope=future`
 

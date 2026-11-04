@@ -1440,3 +1440,68 @@ input {
   flex-basis: 100%;
   margin-top: 2px;
 }
+
+/* Plan ahead */
+
+.header-page {
+  margin-left: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+a.header-title {
+  text-decoration: none;
+}
+
+.page-switch {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.page-switch:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-shadow);
+  border-radius: var(--radius-sm);
+}
+
+.plan-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.floor-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.plan-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.plan-note {
+  margin: 12px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.plan-unknown {
+  margin-top: 16px;
+}
+
+.plan-unknown .list-group {
+  margin-top: 4px;
+}

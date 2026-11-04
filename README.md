@@ -29,6 +29,14 @@ Tap any room for its full day, class by class, with the current one marked.
 Search understands floors, so `3` gives you the third floor rather than every
 room with a 3 in the number.
 
+## Plan ahead
+
+`/plan` is for booking a room for a later class. Pick a day and a class time and
+it lists every room free for that whole class, nearest first. The portal only
+shows each room's next four classes, so a busy room's later slots can be out of
+sight. Those rooms are listed separately as "can't confirm yet" rather than
+called free.
+
 ## Room facts
 
 A room being unbooked does not make it usable. The door may be locked, there may

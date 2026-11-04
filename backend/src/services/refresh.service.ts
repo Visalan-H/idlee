@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js'
-import { scrapeRoom } from './scraper.service.js'
+import { CARD_CAP, scrapeRoom } from './scraper.service.js'
 
 const CONCURRENCY = 6
 const BUDGET_MS = 45_000
@@ -31,6 +31,14 @@ async function refreshRoom(room: RoomRow, now: Date) {
   }
 
   const upcoming = sessions.filter((s) => new Date(s.startsAt) > now)
+
+  // A full page means there may be more bookings behind the last card, so the
+  // schedule is only known up to where that card ends. Counted on every card,
+  // including one already under way, because that one took a slot on the page too.
+  const knownUntil =
+    sessions.length >= CARD_CAP
+      ? sessions.reduce((max, s) => (s.endsAt > max ? s.endsAt : max), sessions[0].endsAt)
+      : null
   const client = await pool.connect()
 
   try {
@@ -47,7 +55,10 @@ async function refreshRoom(room: RoomRow, now: Date) {
       )
     }
 
-    await client.query('update rooms set fetched_at = now() where id = $1', [room.id])
+    await client.query('update rooms set fetched_at = now(), known_until = $2 where id = $1', [
+      room.id,
+      knownUntil,
+    ])
     await client.query('commit')
   } catch (err) {
     await client.query('rollback')

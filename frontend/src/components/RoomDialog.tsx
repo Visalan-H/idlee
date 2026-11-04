@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Room } from '../types'
+import type { SlotCheck } from '../plan'
 import { fmtTime, relative, statusOf } from '../status'
 import { distanceLabel, locationLabel, getRoomFloor } from '../room'
 import { CheckIcon, XIcon, PinIcon } from '../icons'
@@ -12,6 +13,17 @@ interface Props {
   onClose: () => void
   onSetLocation?: (room: string) => void
   onVoted?: (room: string, attribute: string, prev: string | null, next: string | null) => void
+  /** Overrides "Classes today" when the sheet shows another day. */
+  scheduleHeading?: string
+  /** From the plan page: the room's state for the chosen slot instead of right now. */
+  slotStatus?: SlotCheck
+  slotName?: string
+}
+
+const SLOT_TITLE: Record<SlotCheck['state'], string> = {
+  free: 'Free for this class',
+  busy: 'Booked for this class',
+  unknown: "Can't confirm yet",
 }
 
 const STATUS_TITLE: Record<string, string> = {
@@ -24,7 +36,17 @@ const STATUS_TITLE: Record<string, string> = {
 /** Long enough to cover the slide even if transitionend never lands. */
 const SLIDE_MS = 380
 
-export function RoomDialog({ room, now, myRoom, onClose, onSetLocation, onVoted }: Props) {
+export function RoomDialog({
+  room,
+  now,
+  myRoom,
+  onClose,
+  onSetLocation,
+  onVoted,
+  scheduleHeading,
+  slotStatus,
+  slotName,
+}: Props) {
   const ref = useRef<HTMLDialogElement>(null)
   // The last room stays mounted through the slide-out, after `room` is already null.
   const [shown, setShown] = useState<Room | null>(room)
@@ -108,7 +130,19 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation, onVoted 
             </button>
           </div>
 
-          {status && (
+          {slotStatus && (
+            <div className={`dialog-status ${slotStatus.state}`}>
+              <span className={`status-dot ${slotStatus.state}`} />
+              <div className="dialog-status-info">
+                <span className="dialog-status-title">{SLOT_TITLE[slotStatus.state]}</span>
+                <span className="dialog-status-sub">
+                  {slotName} · {slotStatus.label}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {status && !slotStatus && (
             <div className={`dialog-status ${status.kind}`}>
               <span className={`status-dot ${status.kind}`} />
               <div className="dialog-status-info">
@@ -135,7 +169,7 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation, onVoted 
           )}
 
           <div className="dialog-schedule">
-            <h3 className="schedule-heading">Classes today</h3>
+            <h3 className="schedule-heading">{scheduleHeading ?? 'Classes today'}</h3>
             {view.sessions.length > 0 ? (
               <div className="schedule-list">
                 {view.sessions.map((s) => {
@@ -154,7 +188,9 @@ export function RoomDialog({ room, now, myRoom, onClose, onSetLocation, onVoted 
                 })}
               </div>
             ) : (
-              <div className="no-classes">Nothing booked today.</div>
+              <div className="no-classes">
+                {scheduleHeading ? 'Nothing booked that we can see.' : 'Nothing booked today.'}
+              </div>
             )}
           </div>
 

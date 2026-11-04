@@ -11,6 +11,8 @@ export interface Room {
   room: string
   fresh: boolean
   fetchedAt: string | null
+  /** Bookings after this were past the portal's four-card cap. Null means none were. */
+  knownUntil?: string | null
   sessions: RoomSession[]
   facts?: Facts
 }
@@ -19,6 +21,12 @@ export interface TodayPayload {
   day: string
   updatedAt: string | null
   staleRooms: number
+  rooms: Room[]
+}
+
+export interface PlanPayload {
+  day: string
+  updatedAt: string | null
   rooms: Room[]
 }
 

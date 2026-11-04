@@ -7,6 +7,12 @@ create table if not exists rooms (
   fetched_at   timestamptz
 );
 
+-- The portal shows a room's next four bookings and nothing past them. When a
+-- scrape hits that cap, this is where the fourth one ends, and nothing after it
+-- is known. Null means the scrape came back under the cap, so every booking the
+-- room has was seen.
+alter table rooms add column if not exists known_until timestamptz;
+
 create table if not exists sessions (
   id         serial primary key,
   room_id    integer not null references rooms(id) on delete cascade,

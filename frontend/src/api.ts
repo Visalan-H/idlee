@@ -1,4 +1,4 @@
-import type { TodayPayload } from './types'
+import type { PlanPayload, TodayPayload } from './types'
 
 const BASE = import.meta.env.VITE_API_URL ?? ''
 
@@ -6,6 +6,19 @@ export async function fetchToday(): Promise<TodayPayload> {
   let res: Response
   try {
     res = await fetch(`${BASE}/api/rooms`)
+  } catch {
+    throw new Error('Schedule service is unreachable. Check your connection and try again.')
+  }
+  if (!res.ok) {
+    throw new Error(`Schedule service returned an error (HTTP ${res.status}).`)
+  }
+  return res.json()
+}
+
+export async function fetchPlan(day: string): Promise<PlanPayload> {
+  let res: Response
+  try {
+    res = await fetch(`${BASE}/api/rooms/plan?day=${encodeURIComponent(day)}`)
   } catch {
     throw new Error('Schedule service is unreachable. Check your connection and try again.')
   }
