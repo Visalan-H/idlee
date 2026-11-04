@@ -7,6 +7,13 @@ export function istToday(now = new Date()) {
   }).format(now)
 }
 
+// The IST date `days` after today, as YYYY-MM-DD. Noon UTC sits safely inside
+// the IST day either side of midnight, so adding whole days never skips one.
+export function istDayOffset(days: number, now = new Date()) {
+  const [y, m, d] = istToday(now).split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days, 12)).toISOString().slice(0, 10)
+}
+
 // Current IST wall clock as "HH:mm", 24 hour. India has no DST, so this is
 // always UTC+5:30 with no edge cases to carry.
 export function istHm(now = new Date()) {

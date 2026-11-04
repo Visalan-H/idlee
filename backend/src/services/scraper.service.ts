@@ -18,6 +18,8 @@ const META =
 export interface ScrapedRoom {
   label: string | null
   sessions: ScrapedSession[]
+  /** Every card on the page, including any the parser could not read. */
+  cardCount: number
 }
 
 export function parse(html: string): ScrapedRoom {
@@ -48,7 +50,7 @@ export function parse(html: string): ScrapedRoom {
     })
   })
 
-  return { label, sessions }
+  return { label, sessions, cardCount: $('.session-card').length }
 }
 
 async function fetchRoom(url: string) {
@@ -59,6 +61,9 @@ async function fetchRoom(url: string) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return parse(await res.text())
 }
+
+/** The portal never shows more than this many future bookings for a room. */
+export const CARD_CAP = 4
 
 export async function scrapeRoom(locationId: number, token: string) {
   const url = `https://learner.saveetha.in/general/locations/${locationId}/${token}/?scope=future`

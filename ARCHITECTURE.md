@@ -75,6 +75,29 @@ it found. The morning's capture survives every later run. `sessions` is unique
 on `(room_id, starts_at)`, so a re-fetch of the same class updates rather than
 duplicates, and the whole thing runs in one transaction per room.
 
+### Four cards, on any day
+
+The cap is four bookings, not four per day. `?scope=future` returns a room's
+next four classes wherever they fall, so a quiet room's page reaches a week or
+more ahead and a busy room's page may not get past this afternoon. Everything a
+refresh sees is stored, whatever its day.
+
+That makes a page full of cards ambiguous: there may be more behind the fourth.
+So when a scrape returns four, `rooms.known_until` records where the fourth one
+ends, and nothing after it counts as known. Under four, it is null, because the
+room has no bookings the page left out. The plan page reads it to tell "free"
+from "can't see that far yet", and never shows the second as the first.
+
+The count is of cards on the page, not cards that parsed. A card whose date line
+the parser cannot read is still a booking, at a time nobody can see, so a page
+with one is known only up to the moment it was fetched.
+
+`rooms.card_count` holds that count. A room with no count has not been scraped
+since the columns arrived, so the plan endpoint reports it as known only up to
+its last fetch and every later slot shows as unconfirmed, never free. The home
+payload reads neither column, so `/api/rooms` keeps working before the schema
+runs. A refresh does write them, so run `npm run schema` before deploying.
+
 `?scope=past` exists on the portal and the app never calls it. Doubling the
 request count to reconstruct history nobody asked for is not worth it.
 
@@ -292,6 +315,34 @@ in an earlier version and it is waste, since the data changes every two hours.
 Coming back to the tab is the only moment the data can be stale to you, so that
 is when it refetches.
 
+## Plan ahead
+
+Teachers move classes and need a room for a later slot, often tomorrow's.
+Opening rooms one by one to read their day does not scale past three rooms.
+
+`/plan` takes a day and a class slot and lists every room free for the whole
+slot, ordered by the chosen floors and then votes. It has no "set your room",
+since someone planning tomorrow is not standing anywhere yet. It reads
+`GET /api/rooms/plan?day=YYYY-MM-DD`, which is today's payload for another day
+plus `knownUntil` per room, cached the same way. Days run from today to six
+days out.
+
+A room falls in one of three groups for a slot. Booked if any stored class
+overlaps it, which holds even when the rest of its day is unknown. Unknown if
+its data is stale or `knownUntil` ends before the slot does. Free otherwise.
+Unknown rooms sit behind a button, below the free list, with the reason.
+
+The slots are hardcoded in `plan.ts` from the portal's CLS labels. They have not
+moved, and inferring them from sessions breaks on a quiet day.
+
+An evening refresh target after the last class, 18:45, means tomorrow is as
+complete as the cap allows by the time anyone plans it. A room with five or six
+classes tomorrow still shows its last slots as unknown until the morning.
+
+`/plan` is a real path. `frontend/vercel.json` rewrites it to `index.html` and
+`main.tsx` picks the page from `location.pathname`. One path did not justify a
+router.
+
 ## The frontend
 
 ### Room numbers are coordinates
@@ -404,6 +455,25 @@ When nothing is free, the app names the room that frees up soonest. It now
 prefers one nobody calls locked, and falls back to the locked one only when
 every candidate is locked. Waiting twenty minutes for a door that does not open
 is the worst answer the app could give.
+
+### Settings fold away, rows stay on one line
+
+Your room and your floor order are two small buttons on one line, "Near 3654"
+and "Floors 3, 2", each opening only its own setting. They are separate choices,
+set once and then left alone. Open, they took two rows of the first screen on
+every visit.
+
+A list row holds the number and at most two chips. The floor is the number's
+first digit, so it is not spelled out: a warning (locked,
+no signal, no ports), the working carriers, or AC when the room has it. "No AC"
+and port counts describe most rooms, so they say little in a list and stay in
+the room sheet with everything else. A chip that does not fit wraps onto a
+clipped second line and disappears whole rather than being cut in half.
+
+The best pick card keeps the same chip rules with room for three, and the
+whole card is the tap target, so it has no separate Details footer.
+
+Plan ahead is the third tab. On the plan page the tabs are links back to `/`.
 
 ### Search scores, it does not filter
 

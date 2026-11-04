@@ -1,5 +1,4 @@
 import type { Room, Status } from '../types'
-import { getRoomFloor } from '../room'
 import { FactChips } from './FactChips'
 
 interface Props {
@@ -9,8 +8,6 @@ interface Props {
 }
 
 export function RoomCard({ room, status, onOpen }: Props) {
-  const floor = getRoomFloor(room.room)
-
   return (
     <button
       type="button"
@@ -19,7 +16,6 @@ export function RoomCard({ room, status, onOpen }: Props) {
     >
       <div className="card-top">
         <span className="card-room">{room.room}</span>
-        <span className="card-floor">{floor}</span>
       </div>
 
       <div className="card-status">

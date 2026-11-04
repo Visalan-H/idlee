@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js'
-import { scrapeRoom } from './scraper.service.js'
+import { CARD_CAP, scrapeRoom } from './scraper.service.js'
 
 const CONCURRENCY = 6
 const BUDGET_MS = 45_000
@@ -19,8 +19,23 @@ function labelMatches(label: string, roomNo: string) {
   return rest === '' || /^[^A-Za-z0-9]/.test(rest)
 }
 
+/**
+ * Where a scrape's knowledge of a room ends, or null when it saw everything.
+ *
+ * A full page means there may be more bookings behind the last card, so the
+ * schedule is only known up to where that card ends. Every card on the page
+ * counts, including one already under way, because each took a place. A card
+ * the parser could not read is a booking at an unknown time, so nothing past
+ * now can be called free.
+ */
+export function reachOf(cardCount: number, sessions: { endsAt: string }[], now: Date) {
+  if (cardCount > sessions.length) return now.toISOString()
+  if (cardCount < CARD_CAP) return null
+  return sessions.reduce((max, s) => (s.endsAt > max ? s.endsAt : max), sessions[0].endsAt)
+}
+
 async function refreshRoom(room: RoomRow, now: Date) {
-  const { label, sessions } = await scrapeRoom(room.location_id, room.token)
+  const { label, sessions, cardCount } = await scrapeRoom(room.location_id, room.token)
 
   // If the page names a different room, this row's token points elsewhere and
   // writing its sessions here would file another room's timetable under this
@@ -31,6 +46,8 @@ async function refreshRoom(room: RoomRow, now: Date) {
   }
 
   const upcoming = sessions.filter((s) => new Date(s.startsAt) > now)
+
+  const knownUntil = reachOf(cardCount, sessions, now)
   const client = await pool.connect()
 
   try {
@@ -47,7 +64,10 @@ async function refreshRoom(room: RoomRow, now: Date) {
       )
     }
 
-    await client.query('update rooms set fetched_at = now() where id = $1', [room.id])
+    await client.query(
+      'update rooms set fetched_at = now(), known_until = $2, card_count = $3 where id = $1',
+      [room.id, knownUntil, cardCount],
+    )
     await client.query('commit')
   } catch (err) {
     await client.query('rollback')

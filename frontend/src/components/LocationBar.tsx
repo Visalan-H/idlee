@@ -5,11 +5,13 @@ import { PinIcon, XIcon, CheckIcon } from '../icons'
 interface Props {
   myRoom: string | null
   onSet: (room: string | null) => void
+  /** Open straight into the room number box, for when the bar was just asked for. */
+  startEditing?: boolean
 }
 
-export function LocationBar({ myRoom, onSet }: Props) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
+export function LocationBar({ myRoom, onSet, startEditing = false }: Props) {
+  const [editing, setEditing] = useState(startEditing)
+  const [draft, setDraft] = useState(startEditing ? (myRoom ?? '') : '')
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
