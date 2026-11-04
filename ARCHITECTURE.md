@@ -89,8 +89,8 @@ room has no bookings the page left out. The plan page reads it to tell "free"
 from "can't see that far yet", and never shows the second as the first.
 
 The count is of cards on the page, not cards that parsed. A card whose date line
-the parser cannot read still took one of the four places, and counting only the
-readable ones would mark a full page as complete.
+the parser cannot read is still a booking, at a time nobody can see, so a page
+with one is known only up to the moment it was fetched.
 
 `rooms.card_count` holds that count. A room with no count has not been scraped
 since the columns arrived, so the plan endpoint reports it as known only up to

@@ -19,6 +19,21 @@ function labelMatches(label: string, roomNo: string) {
   return rest === '' || /^[^A-Za-z0-9]/.test(rest)
 }
 
+/**
+ * Where a scrape's knowledge of a room ends, or null when it saw everything.
+ *
+ * A full page means there may be more bookings behind the last card, so the
+ * schedule is only known up to where that card ends. Every card on the page
+ * counts, including one already under way, because each took a place. A card
+ * the parser could not read is a booking at an unknown time, so nothing past
+ * now can be called free.
+ */
+export function reachOf(cardCount: number, sessions: { endsAt: string }[], now: Date) {
+  if (cardCount > sessions.length) return now.toISOString()
+  if (cardCount < CARD_CAP) return null
+  return sessions.reduce((max, s) => (s.endsAt > max ? s.endsAt : max), sessions[0].endsAt)
+}
+
 async function refreshRoom(room: RoomRow, now: Date) {
   const { label, sessions, cardCount } = await scrapeRoom(room.location_id, room.token)
 
@@ -32,17 +47,7 @@ async function refreshRoom(room: RoomRow, now: Date) {
 
   const upcoming = sessions.filter((s) => new Date(s.startsAt) > now)
 
-  // A full page means there may be more bookings behind the last card, so the
-  // schedule is only known up to where that card ends. Counted on every card on
-  // the page, including one already under way and any the parser could not read,
-  // because each took a slot. A full page with nothing readable on it is known
-  // only up to now.
-  const knownUntil =
-    cardCount < CARD_CAP
-      ? null
-      : sessions.length
-        ? sessions.reduce((max, s) => (s.endsAt > max ? s.endsAt : max), sessions[0].endsAt)
-        : now.toISOString()
+  const knownUntil = reachOf(cardCount, sessions, now)
   const client = await pool.connect()
 
   try {

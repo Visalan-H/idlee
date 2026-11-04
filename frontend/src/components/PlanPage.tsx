@@ -58,11 +58,13 @@ export function PlanPage() {
   // so step to the next one, and past today's last slot, or midnight, to the next day.
   useEffect(() => {
     if (!days.includes(day)) {
+      setShowUnknown(false)
       setDay(days[0])
       setSlotIndex(Math.max(0, firstOpenSlot(days[0], now)))
       return
     }
     if (at(day, SLOTS[slotIndex].end) > now) return
+    setShowUnknown(false)
     const next = firstOpenSlot(day, now)
     if (next !== -1) {
       setSlotIndex(next)
