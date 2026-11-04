@@ -1,4 +1,4 @@
-import { distanceLabel, getRoomFloor } from '../room'
+import { distanceLabel } from '../room'
 import { ChevronRightIcon } from '../icons'
 import { FactChips } from './FactChips'
 import type { Ranked } from '../rank'
@@ -29,7 +29,6 @@ export function TopPick({ ranked, myRoom, onOpen }: Props) {
         <FactChips facts={room.facts} />
       </div>
       <div className="hero-pick-foot">
-        <span className="floor-label">{getRoomFloor(room.room)}</span>
         <span className="view-link">
           Details <ChevronRightIcon width={14} height={14} />
         </span>

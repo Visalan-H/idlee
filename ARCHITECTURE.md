@@ -452,7 +452,8 @@ Your room and floor order sit behind one summary line, "Near 3654 · Floors 3, 2
 because they are set once and then left alone. Open, they took two rows of the
 first screen on every visit.
 
-A list row holds the number, the floor and at most two chips: a warning (locked,
+A list row holds the number and at most two chips. The floor is the number's
+first digit, so it is not spelled out: a warning (locked,
 no signal, no ports), the working carriers, or AC when the room has it. "No AC"
 and port counts describe most rooms, so they say little in a list and stay in
 the room sheet with everything else. A chip that does not fit wraps onto a

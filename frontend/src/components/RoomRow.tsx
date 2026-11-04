@@ -1,4 +1,4 @@
-import { distanceLabel, getRoomFloor } from '../room'
+import { distanceLabel } from '../room'
 import { ChevronRightIcon } from '../icons'
 import type { Ranked } from '../rank'
 import { FactChips } from './FactChips'
@@ -12,7 +12,6 @@ interface Props {
 export function RoomRow({ ranked, myRoom, onOpen }: Props) {
   const { room, status } = ranked
   const where = myRoom ? distanceLabel(myRoom, room.room) : null
-  const floor = getRoomFloor(room.room)
 
   return (
     <button type="button" className="room-row" onClick={onOpen}>
@@ -20,7 +19,6 @@ export function RoomRow({ ranked, myRoom, onOpen }: Props) {
         <span className={`status-dot ${status.kind}`} aria-hidden />
         <div className="room-row-title-wrap">
           <span className="room-row-name">{room.room}</span>
-          <span className="room-row-floor">{floor}</span>
           <FactChips facts={room.facts} limit={2} />
         </div>
       </div>

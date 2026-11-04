@@ -703,7 +703,7 @@ input {
 .hero-pick-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   margin-top: 14px;
   padding-top: 12px;
@@ -1539,10 +1539,6 @@ a.tab-item {
   align-items: baseline;
   gap: 8px;
   overflow: hidden;
-}
-
-.room-row .room-row-floor {
-  white-space: nowrap;
 }
 
 /* A chip that does not fit wraps onto a second line, which is clipped, so it
