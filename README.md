@@ -56,9 +56,12 @@ There are no accounts. Your browser holds a random id so you can change your
 answer later, and it is hashed before storage, so the table cannot be read as a
 record of which rooms you have been sitting in.
 
+The site runs Vercel Web Analytics to count unique visitors. It has no part in
+voting and never sees that id.
+
 ## Limits
 
-- 100 rooms of roughly 290 are mapped. An unmapped room looks the same as one
+- 150 rooms of roughly 290 are mapped. An unmapped room looks the same as one
   with no classes.
 - Schedules refresh a handful of times a day at class-slot boundaries, not live.
   A class moved at 11:05 appears at the next boundary. The header shows when the
@@ -76,7 +79,7 @@ string for every door, so it cannot be guessed or typed.
 
 `qr-scanner/index.html` is a single page that opens the camera, reads a door QR
 and shows the token to copy. Walking a corridor with it is how rooms get added,
-and it is why only 100 of them exist so far.
+and it is why only 150 of them exist so far.
 
 ## Running it
 

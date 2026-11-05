@@ -39,9 +39,9 @@ advance and does not change.
 
 ### One cron, a handful of scrapes a day
 
-The scrape should only run at slot boundaries, six or so times a day. Polling
+The scrape should only run at slot boundaries, eight times a day. Polling
 every fifteen minutes was the first instinct and it is wasteful: the timetable
-moves a handful of times a day, and six runs at 100 rooms is 600 requests, a
+moves a handful of times a day, and eight runs at 150 rooms is 1,200 requests, a
 rounding error next to what students themselves generate.
 
 A cron per boundary would work but puts the schedule in the cron-job.org
@@ -61,8 +61,8 @@ or a slot can fall between two ticks and be missed.
 The cost is honesty about staleness. A class moved at 11:05 is wrong until the
 next boundary. The header carries the last refresh time rather than pretending
 the data is live. A banner used to warn once data passed three hours old, but
-scrapes stop at 14:45, so it showed every evening and weekend and taught people
-to ignore it.
+scrapes stopped at 14:45 back then, so it showed every evening and weekend and
+taught people to ignore it.
 
 ### Deleting only the future
 
@@ -422,7 +422,7 @@ of a plug socket.
 
 The first version only ever added cost, so a good vote was worth nothing and a
 bad one hurt. That quietly promotes every room nobody has been in, which is
-exactly backwards when 190 of 290 rooms are unmapped: saying nothing about a
+exactly backwards when 140 of 290 rooms are unmapped: saying nothing about a
 room would have made it look ideal.
 
 So a room with no votes sits near zero, in the middle, and settled votes move it
@@ -490,9 +490,14 @@ ceremony.
 
 ### Hand-written CSS
 
-No Tailwind, no component library. Ten components with a token file at the top
+No Tailwind, no component library. Eleven components with a token file at the top
 does not justify a build-time dependency, and the design is specific enough that
 a component library would mostly get overridden.
+
+### Visitor counts
+
+`main.tsx` mounts Vercel Web Analytics to count unique visitors. It has no part
+in voting, so the voter id stays out of it.
 
 ## Deployment
 
@@ -539,9 +544,7 @@ the slowdown was the only symptom.
 
 ## Open
 
-The Neon password has been exposed in plain text and still needs rotating.
-
-190 of about 290 rooms are unmapped. Scanning them is manual work with the QR
+140 of about 290 rooms are unmapped. Scanning them is manual work with the QR
 scanner page, and until it is done an unknown room is indistinguishable from an
 empty one.
 
