@@ -42,7 +42,7 @@ export default function App({ initialTab = 'free' }: { initialTab?: Tab }) {
 
   /**
    * Folds a vote straight into the cached tally, so counts and consensus move on tap
-   * instead of waiting for the next load. The payload is 100 rooms of schedule for a
+   * instead of waiting for the next load. The payload is 150 rooms of schedule for a
    * change of one integer, and the delta is known exactly, so refetching to learn it
    * would be the slow way to find out something we already know.
    *
